@@ -1,7 +1,10 @@
+
+-- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
 create or replace function set_end_time()
 returns TRIGGER as $$
 begin
-    -- Set the end_time to be one hour after the start_time
+    NEW.schedule_start = DATE_TRUNC('hour', NEW.schedule_start) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
+        -- Set the end_time to be one hour after the start_time
     NEW.schedule_end := NEW.schedule_start + INTERVAL '1 hour';
     return NEW;
 end;
@@ -12,7 +15,7 @@ before insert or update on Schedule
 for EACH row
 execute function set_end_time();
 
-
+-- this trigger ensures that the monthly fee is set based on the membership type
 create or replace function set_fee()
 returns TRIGGER as $$
 begin
@@ -29,6 +32,25 @@ create trigger before_insert_update_club_member
 before insert or update on Club_Member
 for EACH row
 execute function set_fee();
+
+
+-- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
+create or replace function set_class_time()
+returns TRIGGER as $$
+begin
+    NEW.class_time = DATE_TRUNC('hour', NEW.class_time) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
+    return NEW;
+end;
+$$ language plpgsql;
+
+create trigger before_insert_update_class
+before insert or update on Class
+for EACH row
+execute function set_class_time();
+
+
+
+
 
 
 insert into Building(num_rooms) values (8);
@@ -119,7 +141,10 @@ select
     floor(random() * 5) + 1 as employee_id,
     -- Select a random timestamp from today to 90 days ahead between hours of 8:00 and 18:00
     NOW() + (random() * (NOW()+'90 days' - NOW())) as schedule_start
-from generate_series(1, 20) as i;
+from generate_series(1, 20) as i
+on conflict (employee_id, schedule_start) do nothing;
+
+
 
 insert into Class(room_num, trainer_id, class_time, capacity, registered, exercise_type)
 select 
@@ -127,13 +152,9 @@ select
     floor(random() * 8) + 1 as room_num,
     -- Select trainer_id randomly from 1 to 5 (assuming there are 5 trainers)
     floor(random() * 5) + 1 as trainer_id,
-    -- Select a random timestamp from 90 days ago to 90 days ahead
-    ('2024-01-01 08:00:27')::timestamp + (random() * (NOW()+'90 days' - NOW())) + '30 days' as class_time,
-    -- Set capacity to a random number between 10 and 30
-    CASE floor(random() * 2)
-        when 0 then 1
-        else floor(random() * 21) + 10
-    end as capacity,
+    -- Select a random timestamp from 90 days ago to 90 days ahead that is exactly on the hour 
+    ('2024-01-01 08:00:00'::timestamp + (random() * (NOW() + '90 days' - NOW()))) as class_time,    -- Set capacity to a random number between 10 and 30
+    floor(random() * 21) + 10 as capacity,
     0 as registered,
     -- Choose exercise type randomly
     CASE floor(random() * 3)
@@ -143,7 +164,9 @@ select
     end as exercise_type
 from generate_series(1, 25) as i
 where not exists -- no overlapping room_num, trainer_id, and class_time
-(select * from Class c where c.room_num = room_num and c.trainer_id = trainer_id and c.class_time = class_time);
+(select * from Class c where c.trainer_id = trainer_id and c.class_time = class_time)
+on conflict (room_num, class_time) do nothing;
+
 
 DO $$
 declare
@@ -159,7 +182,7 @@ begin
         order by random()
         limit 1;
 
-        IF chosen_class_id is not null then
+        if chosen_class_id is not null then
             insert into Exercise (duration, exercise_date, exercise_type, class_id, username)
             select 
                 60,
@@ -187,3 +210,65 @@ begin
         end if;
     end loop;
 end $$;
+
+
+-- book a bunch of solo training schedules based on trainer availability
+DO $$
+declare
+    chosen_trainer_id integer;
+    chosen_time timestamp;
+    chosen_user varchar(255);
+begin
+    for i in 1..25 loop
+        select t.employee_id into chosen_trainer_id
+        from Employee t
+        where t.is_trainer = true
+        order by random()
+        limit 1;
+
+        select s.schedule_start into chosen_time
+        from Schedule s
+        where s.employee_id = chosen_trainer_id
+        order by random()
+        limit 1;
+
+        select u.username into chosen_user
+        from Club_Member u
+        where not exists (select e.exercise_date from Exercise e where e.username = u.username)
+        order by random()
+        limit 1;
+
+        if chosen_trainer_id is not null and chosen_time is not null and chosen_user is not null then
+            insert into Class (room_num, trainer_id, class_time, capacity, registered, exercise_type)
+            select 
+                -- Select room number randomly from 1 to 8
+                floor(random() * 8) + 1 as room_num,
+                chosen_trainer_id as trainer_id,
+                chosen_time as class_time,
+                1 as capacity,
+                1 as registered, 
+                'personal training' as exercise_type
+            -- update registered count
+            where not exists -- no overlapping room_num, and class_time
+            (select * from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time);
+
+            insert into Exercise(duration, exercise_date, exercise_type, class_id, username)
+            select 
+                60,
+                chosen_time,
+                'personal training',
+                (select c.class_id from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time),
+                chosen_user
+            on conflict (class_id, username) DO NOTHING;
+
+            delete from Schedule s
+            where s.employee_id = chosen_trainer_id and s.schedule_start = chosen_time;
+
+        end if;
+    end loop;
+end $$;
+
+
+INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type)
+VALUES
+ ('testuser',  'Test', 'User', 123, 123, 123, 'Basic');

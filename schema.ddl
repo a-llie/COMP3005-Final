@@ -64,10 +64,11 @@ create table Invoice (
 
 create table Exercise (
     duration float not null,
-    exercise_date date not null,
+    exercise_date timestamp not null,
     exercise_type varchar(255) not null,
     class_id integer not null,
     username varchar(255) not null,
+    weight integer,
     foreign key (class_id) references Class(class_id),
     foreign key (username) references Club_Member(username),
     primary key (class_id, username)

@@ -63,15 +63,36 @@ def main():
         conn.cursor().execute(
             sql.SQL("CREATE DATABASE {}").format(sql.Identifier(dbname))
         )
+        conn = psycopg2.connect(dbname=DB_NAME, user=user,
+                                password=password, host=host, port=port)
     else:
         # Clear the existing database
         print(
             f"Database '{dbname}' already exists. Clearing existing tables...")
+        conn = psycopg2.connect(dbname=DB_NAME, user=user,
+                                password=password, host=host, port=port)
         clear_db(conn)
 
     # # Execute SQL commands from the file
+
     execute_sql_file(TABLE_CREATION_FILE, conn)
     execute_sql_file(TABLE_POPULATION_FILE, conn)
+
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT employee_id, schedule_start FROM schedule ORDER BY employee_id, schedule_start")
+
+    print("Employee ID | Schedule Start")
+    for row in cursor.fetchall():
+        print(row)
+
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM Exercise e WHERE ( SELECT c.capacity from Class c WHERE c.class_id = e.class_id) = 1")
+
+    print("Exercise")
+    for row in cursor.fetchall():
+        print(row)
 
 
 if __name__ == "__main__":
