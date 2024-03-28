@@ -73,22 +73,6 @@ def main():
     execute_sql_file(TABLE_CREATION_FILE, conn)
     execute_sql_file(TABLE_POPULATION_FILE, conn)
 
-    # get class data
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Exercise ORDER BY class_id")
-    rows = cursor.fetchall()
-    print("Exercises:")
-    for row in rows:
-        print(row)
-
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Class ORDER BY class_id")
-    rows = cursor.fetchall()
-    print("Classes:")
-    for row in rows:
-        print(row)
-    conn.close()
-
 
 if __name__ == "__main__":
     main()
