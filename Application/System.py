@@ -67,3 +67,23 @@ class System():
         conn.commit()
 
         return username
+    
+
+    @staticmethod
+    def get_member(username, conn):
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE username = %s", [username])
+        return cursor.fetchall()
+    
+    @staticmethod
+    def get_member(first, last, conn):
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name = %s AND last_name = %s", [first, last])
+        return cursor.fetchall()
+        
+    @staticmethod
+    def print_member(list):
+        #username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
+        print("#username: %s, \nmonthly_free: %f, \nmembership_type: %s, \nfirst_name: %s, \nlast_name: %s, \nuser_weight: %f, \nheight: %f, \nweight_goal: %f", list)

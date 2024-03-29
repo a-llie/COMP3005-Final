@@ -48,8 +48,8 @@ def clear_db(conn):
 
 def main():
     dbname = DB_NAME
-    user = os.environ['POSTGRES_USER']
-    password = os.environ['POSTGRES_PASS']
+    user = 'POSTGRES_USER' #os.environ['POSTGRES_USER']
+    password = 'POSTGRES_PASS' # os.environ['POSTGRES_PASS']
     host = HOST
     port = PORT
 

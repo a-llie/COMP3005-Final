@@ -7,8 +7,9 @@ class Member(Person):
     username: str
     weight: int
 
-    def __init__(self, username, first_name, last_name, weight) -> None:
-        Person.__init__(self, first_name, last_name, username)
+    def __init__(self, username, first_name, last_name, weight, conn) -> None:
+        Person.__init__(self, first_name, last_name, conn)
+        self.username = username
         self.weight = weight
 
     def options(self, conn):
@@ -34,7 +35,7 @@ class Member(Person):
                     return
                 case _:
                     print("Invalid option")
-                    self.options(conn)
+                    #self.options(conn)
                     return
 
     def booking_choices(self, conn):
@@ -65,11 +66,6 @@ class Member(Person):
         self.book_session(session, conn)
 
     def sign_in():
-        pass
-
-    # member
-    def register():
-        # insert feilds and submit
         pass
 
     def add_exercise(startTime, duration, exercise_type: str, weight):

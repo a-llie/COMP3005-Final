@@ -1,6 +1,14 @@
 
 
-class Admin():
+from Application.Person import Person
+
+
+class Admin(Person):
+
+     def __init__(self, first_name, last_name, conn) -> None:
+        Person.__init__(self, first_name, last_name, conn)
+        pass
+
 
     def get_trainer_schedual(id):
         pass
