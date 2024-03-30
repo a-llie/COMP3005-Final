@@ -30,7 +30,9 @@ class Trainer(Person):
             match menu_choice:
                 case "1":
                     #manage the Schedual table(only refereing to the trianer singed in)
-                    pass
+                    self.__manage_schedual_table()
+                    
+                
                 case "2":
                     choice = input("Would you like to search by: \n 1. username \n 2. name")
                     match choice:
@@ -41,7 +43,7 @@ class Trainer(Person):
                             System.print_member(out)
 
                             input("")
-                            return
+                            
 
                         case "2":
                             first = input("Input first name: ")
@@ -51,22 +53,22 @@ class Trainer(Person):
                             System.print_member(out)
 
                             input("")
-                            return
+                            
                         case _:
                             print("Invalid option")
-                            return
-                    return
+                            
+                    
                 case "3":
                     #see whats booked for you (in the class table )
                     self.__see_upcoming_classes()
-                    pass    
+                    
                 
                 case "4":
                     print("Signing out...\n\n")
                     return
                 case _:
                     print("Invalid option")
-                    return
+                    
 
     def __get_schedule(self):
         cursor = self.conn.cursor()
@@ -77,11 +79,10 @@ class Trainer(Person):
 
         results = cursor.fetchall()
         if not results:
-            print("No upcoming classes.")
+            print("Nothing Schedualed.")
             return
 
-        print("Upcoming classes:")
-        print(f'    {"Start Time".ljust(20)} | {"End time".ljust(20)} ')
+        print("Your Scheduale".ljust(20)} | {"End time".ljust(20)} ')
         print('-' * 95)
         for row in results:
                 print(
@@ -93,6 +94,8 @@ class Trainer(Person):
         # breack it into one our blocks
         duration = end - start #might need a object/function for this
         cursor = self.conn.cursor()
+
+        #insert adeal with round up to next hour here
 
         for i in range(duration):
             next_time = start + 1 #this may need a function too
@@ -110,6 +113,8 @@ class Trainer(Person):
         # breack it into one our blocks
         duration = end - start #might need a object/function for this
         cursor = self.conn.cursor()
+
+        #insert adeal with round up to next hour here
 
         for i in range(duration):
             next_time = start + 1 #this may need a function too
@@ -133,16 +138,19 @@ class Trainer(Person):
                     return
                 case "2":
                     #take start time in format
+                    start = input("Give Start time of block (in for ___): ")
                     #take end time in format
+                    end = input("Give Start time of block (in for ___): ")
 
-                    self.__add_availability()
+                    self.__add_availability(start, end)
                     input("")
                     return
                 case "3":
                     #take start time in format
+                    start = input("Give Start time of block you would like to remvoe (in for ___):\n ")
+                    end = input("Give end time of block you would like to remvoe (in for ___):\n ")
 
-                    #take end time in format
-                    self.__remove_availability()
+                    self.__remove_availability(start, end)
                     input("")
                     return
                 case "4":

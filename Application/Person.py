@@ -15,3 +15,8 @@ class Person():
         
 
         print(f'Person {self.first_name} {self.last_name} created.')
+
+
+    @abstractMethod
+    def options(self):
+        pass

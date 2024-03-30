@@ -7,11 +7,26 @@ MAINTANANCE_INTERVAL = 3  # months
 
 class System():
 
-    def add_class(room, start_time, trainer_id, capacity, exercise="", registered=0):
-        pass
+    @staticmethod
+    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise):
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type) VALUES (%s, %s, %s, %s, %s, %s)'
+            , [room_id, start, trainer_id, capacity, registered, exercise])
+        conn.commit()
 
-    def get_free_room():
-        pass
+    @staticmethod
+    def get_free_room(conn, time):
+        cursor = conn.cursor()
+        cursor.execute('SELECT num_rooms FROM Building')
+        num_rooms = cursor.fetchone()[0]
+
+        for i in range(num_rooms):
+            cursor.execute(
+                'SELECT c.room_num FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [i, time])
+            if not cursor.fetchone():
+                return i
+
 
     @staticmethod
     def show_all_trainer_schedules(conn):
