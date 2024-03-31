@@ -31,16 +31,14 @@ class Member(Person):
                 case "6":
                     self.__see_exercise_logbook(conn)
                 case "7":
-                    #if they have a bill to pay they need to pay it as the sing
-                    
-
+                    # if they have a bill to pay they need to pay it as the sing
+                    pass
                 case "8":
                     print("Signing out...\n\n")
                     return
                 case _:
                     print("Invalid option")
-                    #self.options(conn)
-                    
+                    # self.options(conn)
 
     def booking_choices(self, conn):
         slot_choice = input(
@@ -119,9 +117,9 @@ class Member(Person):
         room_id = System.get_free_room(conn, session[1])
 
         print(f'Room {room_id} is available.')
-        
+
         # book a one hour block of the schedule
-        System.add_class(conn, room_id, session[1], session[0], 1, 1, exersise )
+        System.add_class(conn, room_id, session[1], session[0], 1, 1, exersise)
 
         cursor.execute(
             'SELECT class_id FROM Class WHERE room_num = %s AND class_time = %s', [room_id, session[1]])

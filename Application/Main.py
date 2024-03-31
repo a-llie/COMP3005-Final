@@ -3,7 +3,7 @@
 import psycopg2
 from psycopg2 import sql
 import os
-from Application.Trainer import Trainer
+from Trainer import Trainer
 from Member import Member
 from System import System
 
@@ -65,13 +65,13 @@ def menu(conn):
                     m = Member(user, first_name, last_name, weight, conn)
                     m.options(conn)
             case "3":
-                #print("<insert trainer sign in here>")
-                result = Trainer.sing_in(conn)
+                # print("<insert trainer sign in here>")
+                result = Trainer.sign_in(conn)
                 if result is None:
                     print("User not found")
                     menu(conn)
-                else: 
-                    id, first_name, last_name = found
+                else:
+                    id, first_name, last_name = result
                     t = Trainer(first_name, last_name, id, conn)
                     t.options()
 

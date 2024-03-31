@@ -1,5 +1,5 @@
 import psycopg2
-
+from multipledispatch import dispatch
 # placeholder
 
 MAINTANANCE_INTERVAL = 3  # months
@@ -11,8 +11,7 @@ class System():
     def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise):
         cursor = conn.cursor()
         cursor.execute(
-            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type) VALUES (%s, %s, %s, %s, %s, %s)'
-            , [room_id, start, trainer_id, capacity, registered, exercise])
+            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type) VALUES (%s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise])
         conn.commit()
 
     @staticmethod
@@ -26,7 +25,6 @@ class System():
                 'SELECT c.room_num FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [i, time])
             if not cursor.fetchone():
                 return i
-
 
     @staticmethod
     def show_all_trainer_schedules(conn):
@@ -82,23 +80,26 @@ class System():
         conn.commit()
 
         return username
-    
 
     @staticmethod
+    @dispatch(str, psycopg2.extensions.connection)
     def get_member(username, conn):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE username = %s", [username])
+            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE username LIKE %s", ['%' + username + '%'])
         return cursor.fetchall()
-    
+
     @staticmethod
+    @dispatch(str, str, psycopg2.extensions.connection)
     def get_member(first, last, conn):
         cursor = conn.cursor()
         cursor.execute(
             "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name = %s AND last_name = %s", [first, last])
         return cursor.fetchall()
-        
+
     @staticmethod
-    def print_member(list):
-        #username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
-        print("#username: %s, \nmonthly_free: %f, \nmembership_type: %s, \nfirst_name: %s, \nlast_name: %s, \nuser_weight: %f, \nheight: %f, \nweight_goal: %f", list)
+    def print_member(list: tuple):
+        # username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
+        print(f'User info for {list[0]}:')
+        membership = "Basic" if list[2] == 0 else "Pro"
+        print(f'#username: {list[0]}, \nmonthly_free: {list[1]}, \nmembership_type: {membership}, \nfirst_name: {list[3]}, \nlast_name: {list[4]}, \nuser_weight: {list[5]}, \nheight: {list[6]}, \nweight_goal: {list[7]}')

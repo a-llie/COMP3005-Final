@@ -72,7 +72,7 @@ class Admin(Person):
                     match choice:
                         case "1":
                             
-                            self.__get_class_schedual()                            
+                            self.__get_class_schedule()                            
                             continue
                             
 
@@ -102,8 +102,7 @@ class Admin(Person):
 
                 case "5":
                     #bill
-                    
-                
+                    pass
                 case "6":
                     print("Signing out...\n\n")
                     return
@@ -112,7 +111,7 @@ class Admin(Person):
                     
 
 
-    def __get_trainer_schedual(self, id):
+    def __get_trainer_schedule(self, id):
         cursor = self.conn.cursor()
 
         cursor.execute(
@@ -133,7 +132,7 @@ class Admin(Person):
         print('-' * 50)
 
 
-    def __get_class_schedual(self):
+    def __get_class_schedule(self):
         cursor = self.conn.cursor()
 
         cursor.execute(
@@ -141,7 +140,7 @@ class Admin(Person):
 
         results = cursor.fetchall()
         if not results:
-            print("Nothing Schedualed.")
+            print("Nothing Scheduled.")
             return
 
         print("Upcoming classes:")
