@@ -94,7 +94,7 @@ class System():
     def get_member(first, last, conn):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name = %s AND last_name = %s", [first, last])
+            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name LIKE %s AND last_name LIKE %s", [first, last])
         return cursor.fetchall()
 
     @staticmethod

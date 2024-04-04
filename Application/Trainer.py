@@ -32,47 +32,48 @@ class Trainer(Person):
                     self.__manage_schedule_table()
 
                 case "2":
-                    choice = input(
-                        "Would you like to search by: \n 1. username \n 2. name \n\n>>")
-                    match choice:
-                        case "1":
-                            user = input("Input username: ")
-                            out = System.get_member(user, self.conn)
+                    while True:
+                        choice = input(
+                            "Would you like to search by: \n 1. username \n 2. name \n\n>>")
+                        match choice:
+                            case "1":
+                                user = input("Input username: ")
+                                out = System.get_member(user, self.conn)
 
-                            if out is None:
-                                print("User not found")
-                                break
-                            elif len(out) > 1:
-                                i = 1
-                                print(
-                                    "Multiple users found, enter number of user you'd like to see:")
-                                for user in out:
-                                    print(f'{i}. {user[0]}')
-                                    i += 1
-                                try:
-                                    choice = int(input(">>"))
-                                except:
-                                    print("Invalid choice")
-                                    break
-                            else:
-                                choice = 1
-                            print(out[choice - 1])
-                            # display
-                            System.print_member(out[choice - 1])
+                                if out is None:
+                                    print("User not found")
+                                    continue
+                                elif len(out) > 1:
+                                    i = 1
+                                    print(
+                                        "Multiple users found, enter number of user you'd like to see:")
+                                    for user in out:
+                                        print(f'{i}. {user[0]}')
+                                        i += 1
+                                    try:
+                                        choice = int(input(">>"))
+                                    except:
+                                        print("Invalid choice")
+                                        continue
+                                else:
+                                    choice = 1
+                                print(out[choice - 1])
+                                # display
+                                System.print_member(out[choice - 1])
 
-                            input("OK [Press Enter]")
+                                input("OK [Press Enter]")
 
-                        case "2":
-                            first = input("Input first name: ")
-                            last = input("Input last name: ")
-                            out = System.get_member(first, last, self.conn)
-                            # display
-                            System.print_member(out)
+                            case "2":
+                                first = input("Input first name: ")
+                                last = input("Input last name: ")
+                                out = System.get_member(first, last, self.conn)
+                                # display
+                                System.print_member(out)
 
-                            input("OK [Press Enter]")
+                                input("OK [Press Enter]")
 
-                        case _:
-                            print("Invalid option")
+                            case _:
+                                print("Invalid option")
 
                 case "3":
                     # see whats booked for you (in the class table )

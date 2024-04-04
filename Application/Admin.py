@@ -10,6 +10,14 @@ class Admin(Person):
         Person.__init__(self, first_name, last_name, conn)
         return
         
+    @staticmethod
+    def sign_in(conn):
+        id = input("Enter your id: ")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT c.employee_id, c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = FLASE", [id])
+        found = cursor.fetchone()
+        return found
 
     def options(self):
         while True:
@@ -251,5 +259,4 @@ class Admin(Person):
     def __bill_all():
         pass
 
-    def __bill_member(username):
-        pass
+    

@@ -5,6 +5,7 @@ from psycopg2 import sql
 import os
 from Trainer import Trainer
 from Member import Member
+from Admin import Admin
 from System import System
 
 
@@ -76,14 +77,21 @@ def menu(conn):
                     t.options()
 
             case "4":
-                print("<insert admin sign in here>")
+                result = Admin.sign_in(conn)
+                if result is None:
+                    print("User not found")
+                    menu(conn)
+                else:
+                    id, first_name, last_name = result
+                    a = Admin(first_name, last_name, id, conn)
+                    a.options()
             case "5":
                 conn.close()
                 exit()
             case _:
                 print("Invalid option")
-                menu(conn)
-                return
+                
+                
 
 
 def trainer_options(conn):
