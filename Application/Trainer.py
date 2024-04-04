@@ -85,26 +85,6 @@ class Trainer(Person):
                 case _:
                     print("Invalid option")
 
-    def __get_schedule(self):
-        cursor = self.conn.cursor()
-
-        # find all of trainer's schedule
-        cursor.execute(
-            'SELECT schedule_start, schedule_end FROM Schedule s  WHERE s.employee_id = %s AND s.schedule_start > current_timestamp', [self.trainer_ID])
-
-        results = cursor.fetchall()
-        if not results:
-            print("Nothing Scheduled.")
-            return
-
-        print(f'{" Start Time".ljust(20)} | {"End time".ljust(20)} ')
-        print('-' * 50)
-        for row in results:
-            print(
-                f' {str(row[0]).ljust(20)} | {str(row[1]).ljust(20)} ')
-
-        print('-' * 50)
-
     def __add_availability(self, start, end):  # psudo code
         # breack it into one our blocks
         duration = end - start  # might need a object/function for this
@@ -148,7 +128,7 @@ class Trainer(Person):
 
             match menu_choice:
                 case "1":
-                    self.__get_schedule()
+                    System.get_trainer_schedule(self.conn, self.trainer_ID)
                     input("OK [Press Enter]")
                     return
                 case "2":
