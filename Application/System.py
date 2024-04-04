@@ -1,5 +1,6 @@
 import psycopg2
 from multipledispatch import dispatch
+from datetime import datetime, timedelta
 # placeholder
 
 MAINTANANCE_INTERVAL = 3  # months
@@ -99,6 +100,8 @@ class System():
 
     @staticmethod
     def print_member(list: tuple):
+        if list is None:
+            return
         # username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
         print(f'User info for {list[0]}:')
         membership = "Basic" if list[2] == 0 else "Pro"
@@ -145,3 +148,19 @@ class System():
                 f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[3].ljust(20)} | {row[4].ljust(5)} | {row[5].ljust(5)}')
 
         print('-' * 95)
+
+    @staticmethod
+    def timestamp_to_datetime(ts) -> datetime:
+        f = '%Y-%m-%d %H:%M:%S'
+        return datetime.strptime(ts,f)
+    
+    @staticmethod
+    def datetime_to_timestamp(dt : datetime):
+        f = '%Y-%m-%d %H:%M:%S'
+        return dt.strftime(f)
+    
+    @staticmethod
+    def timestamp_add_hour(ts):
+        dt = System.timestamp_to_datetime(ts)
+        dt += timedelta(hours=1)
+        return System.datetime_to_timestamp(dt)

@@ -57,7 +57,7 @@ class Admin(Person):
 
                 case "3":
                     choice = input(
-                        "Would you like to: \n 1. View Equipment \n 2. Service Equipment")
+                        "Would you like to: \n 1. View Equipment \n 2. Service Equipment\n")
                     match choice:
                         case "1":
 
@@ -75,7 +75,7 @@ class Admin(Person):
 
                 case "4":
                     choice = input(
-                        "Would you like to: \n 1. View Upcoming Classes \n 2. Add a Class \n 3. Remove a Class(by time and trainer) \n 4. Remove a Class(by class id)")
+                        "Would you like to: \n 1. View Upcoming Classes \n 2. Add a Class \n 3. Remove a Class(by time and trainer) \n 4. Remove a Class(by class id)\n")
                     match choice:
                         case "1":
 
@@ -107,8 +107,7 @@ class Admin(Person):
                             print("Invalid option")
 
                 case "5":
-                    # bill
-                    pass
+                    self.__bill_all()
                 case "6":
                     print("Signing out...\n\n")
                     return
@@ -119,7 +118,7 @@ class Admin(Person):
         cursor = self.conn.cursor()
 
         cursor.execute(
-            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c AND c.class_time > current_timestamp')
+            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c WHERE c.class_time > current_timestamp ORDER BY class_time DESC')
 
         results = cursor.fetchall()
         if not results:
@@ -127,11 +126,12 @@ class Admin(Person):
             return
 
         print("Upcoming classes:")
-        print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Trainer ID".ljust(20)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(5)} | {"Capacity".ljust(5)} ')
+        print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Trainer ID".ljust(20)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(10)} | {"Capacity".ljust(10)} ')
         print('-' * 95)
         for row in results:
+            print(row)
             print(
-                f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[2].ljust(20)} | {row[3].ljust(20)} | {row[4].ljust(5)} | {row[5].ljust(5)}')
+                f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {str(row[2]).ljust(20)} | {str(row[3]).ljust(20)} | {str(row[4]).ljust(10)} | {str(row[5]).ljust(10)}')
 
         print('-' * 95)
 
@@ -186,7 +186,7 @@ class Admin(Person):
 
         # header
         print("Rooms in Building 1:")  # CURRENTLY HARD CODDED
-        print(f'     {"Room Number".ljust(15)} | {"Class ID".ljust(10)} | {"Class Time".ljust(20)} | {"Trainer".ljust(20)} | {"Exercise Type".ljust(20)}  ')
+        print(f'     {"Room Number".ljust(20)} | {"Class ID".ljust(20)} | {"Class Time".ljust(20)} | {"Trainer".ljust(20)} | {"Exercise Type".ljust(20)}  ')
         print('-' * 95)
 
         # print body
@@ -194,14 +194,14 @@ class Admin(Person):
             cursor.execute(
                 'SELECT class_id, class_time,  trainer_id, exercise_type   FROM Class WHERE room_num = %s AND class_time > current_timestamp', [i])
             results = cursor.fetchall()
-
-            if not results:
+            
+            if len(results) == 0:
                 print(
-                    f'    {(" Room " + str(i)).ljust(15)} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
+                    f'    {(" Room " + str(i)).ljust(20)} | {"-" * 20} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
                 continue
-
+            results = results[0]
             print(
-                f'    {(" Room " + str(i)).ljust(15)} | {str(results[0]).ljust(20)} | {results[1].ljust(20)} | {results[2].ljust(20)} ')
+                f'    {(" Room " + str(i)).ljust(20)} | {str(results[0]).ljust(20)} | {str(results[1]).ljust(20)} | {str(results[2]).ljust(20)} | {results[3].ljust(20)}')
 
         print('-' * 95)
 
@@ -227,7 +227,27 @@ class Admin(Person):
 
     def __maintain_equipment(self, id):
         # simulates maintaining the equipment
-        pass
 
-    def __bill_all():
-        pass
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'UPDATE Equipment SET maintenance_date = CURRENT_TIMESTAMP WHERE equipment_id = %s', [id])
+        self.conn.commit()
+
+    def __bill_all(self):
+        #for each member add monthly fee to amount owing
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM Club_Member')
+        num = cursor.fetchone()
+
+        for i in num:
+            user, fee, owing, mem_type, first, last, user, height, weight = i
+            #get fee and owing
+            #add
+            new_owing = owing + fee
+            #change
+            cursor.execute(
+                'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [new_owing, user])
+            self.conn.commit()
+
+
+

@@ -31,8 +31,7 @@ class Member(Person):
                 case "6":
                     self.__see_exercise_logbook(conn)
                 case "7":
-                    # if they have a bill to pay they need to pay it as the sing
-                    pass
+                    self.__pay_bill()
                 case "8":
                     print("Signing out...\n\n")
                     return
@@ -193,3 +192,23 @@ class Member(Person):
             'INSERT INTO Exercise (duration, exercise_date, exercise_type, class_id, username, weight) VALUES (%s, %s, %s, %s, %s, %s)', [duration, startTime, exercise_type, class_id, self.username, self.weight])
         conn.commit()
         pass
+
+    def __pay_bill(self):
+        #get owing
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT amount_owing FROM Club_Member WHERE username = %s', [self.username])
+        results = cursor.fetchall()[0]
+        #ask to pay
+        choice = input(f'You owe {results}\nWhould you like to pay? (y/n)')
+        if choice.lower() == 'y':
+            #connect to payment service
+            print("connecting to payment service..")
+            cursor.execute(
+                'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [0, self.username])
+            self.cursor.commit()
+            return True
+        else:
+            return False
+        
+        

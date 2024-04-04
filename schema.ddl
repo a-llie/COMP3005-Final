@@ -8,6 +8,7 @@ create table Employee (
 create table Club_Member ( 
     username varchar(255) not null primary key,
     monthly_free float not null,
+    amount_owing float not null,
     membership_type varchar(255) not null,
     first_name varchar(255) not null,
     last_name varchar(255) not null,

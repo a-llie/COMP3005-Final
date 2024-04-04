@@ -1,7 +1,9 @@
 import psycopg2
+import math
 
 from Person import Person
 from System import System
+
 
 
 class Trainer(Person):
@@ -50,6 +52,7 @@ class Trainer(Person):
                                     for user in out:
                                         print(f'{i}. {user[0]}')
                                         i += 1
+                                    # -- is this supposed to be indented?--
                                     try:
                                         choice = int(input(">>"))
                                     except:
@@ -57,7 +60,7 @@ class Trainer(Person):
                                         continue
                                 else:
                                     choice = 1
-                                print(out[choice - 1])
+                                print(out[choice - 1]) # -- causes indexing error --
                                 # display
                                 System.print_member(out[choice - 1])
 
@@ -87,37 +90,42 @@ class Trainer(Person):
 
     def __add_availability(self, start, end):  # psudo code
         # breack it into one our blocks
-        duration = end - start  # might need a object/function for this
+        duration = System.timestamp_to_datetime(end) - System.timestamp_to_datetime(start)  
+        hours = divmod(duration.total_seconds(), 3600)[0]
         cursor = self.conn.cursor()
 
         # insert adeal with round up to next hour here
+        hours = math.ceil(hours)
 
-        for i in range(duration):
-            next_time = start + 1  # this may need a function too
+
+        for i in range(hours):
+            next_time = System.timestamp_add_hour(start)
             try:
                 cursor.execute(
                     'INSERT INTO Schedule (employee_id, schedule_start, schedule_end) VALUES (%s, %s, %s)', [self.trainer_ID, start, next_time])
 
-            except psycopg2.errors.UniqueViolation:
-                pass
+            except psycopg2.errors.UniqueViolation as e:
+                print("ERROR: schedual insert error, add_availibility:\n%s", [e])
+                
 
             start = next_time
 
     def __remove_availability(self, start, end):  # psudo code
         # breack it into one our blocks
-        duration = end - start  # might need a object/function for this
+        duration = System.timestamp_to_datetime(end) - System.timestamp_to_datetime(start)  
+        hours = divmod(duration.total_seconds(), 3600)[0]
         cursor = self.conn.cursor()
 
-        # insert adeal with round up to next hour here
+        hours = math.ceil(hours)
 
-        for i in range(duration):
-            next_time = start + 1  # this may need a function too
+        for i in range(hours):
+            next_time = System.timestamp_add_hour(start)
             try:
                 cursor.execute(
                     'DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s AND schedule_end = %s', [self.trainer_ID, start, next_time])
 
-            except psycopg2.errors.UniqueViolation:
-                pass
+            except psycopg2.errors.UniqueViolation as e:
+                print("ERROR: schedual insert error, remove_availibility:\n%s", [e])
 
             start = next_time
 
@@ -130,31 +138,31 @@ class Trainer(Person):
                 case "1":
                     System.get_trainer_schedule(self.conn, self.trainer_ID)
                     input("OK [Press Enter]")
-                    return
+                    
                 case "2":
                     # take start time in format
-                    start = input("Give Start time of block (in for ___): ")
+                    start = input("Give Start time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
                     # take end time in format
-                    end = input("Give Start time of block (in for ___): ")
+                    end = input("Give end time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
 
                     self.__add_availability(start, end)
-                    input("OK [Press Enter]")
-                    return
+                    
+                    
                 case "3":
                     # take start time in format
                     start = input(
-                        "Give Start time of block you would like to remvoe (in for ___):\n ")
+                        "Give Start time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
                     end = input(
-                        "Give end time of block you would like to remvoe (in for ___):\n ")
+                        "Give end time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
 
                     self.__remove_availability(start, end)
-                    input("OK [Press Enter]")
-                    return
+                    
+                    
                 case "4":
                     break
                 case _:
                     print("Invalid option")
-                    return
+                    
 
     def __see_upcoming_classes(self):
         cursor = self.conn.cursor()
