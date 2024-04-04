@@ -103,3 +103,45 @@ class System():
         print(f'User info for {list[0]}:')
         membership = "Basic" if list[2] == 0 else "Pro"
         print(f'#username: {list[0]}, \nmonthly_free: {list[1]}, \nmembership_type: {membership}, \nfirst_name: {list[3]}, \nlast_name: {list[4]}, \nuser_weight: {list[5]}, \nheight: {list[6]}, \nweight_goal: {list[7]}')
+
+    @staticmethod
+    def get_trainer_schedule(conn, trainer_id):
+        cursor = conn.cursor()
+
+        # find all of trainer's schedule
+        cursor.execute(
+            'SELECT schedule_start, schedule_end FROM Schedule s  WHERE s.employee_id = %s AND s.schedule_start > current_timestamp ORDER BY schedule_start ASC', [trainer_id])
+
+        results = cursor.fetchall()
+        if not results:
+            print("Nothing Scheduled.")
+            return
+
+        print(f'{" Start Time".ljust(20)} | {"End time".ljust(20)} ')
+        print('-' * 50)
+        for row in results:
+            print(
+                f' {str(row[0]).ljust(20)} | {str(row[1]).ljust(20)} ')
+
+        print('-' * 50)
+
+    @staticmethod
+    def get_class_schedule(conn):
+        cursor = conn.cursor()
+
+        cursor.execute(
+            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c AND c.class_time > current_timestamp')
+
+        results = cursor.fetchall()
+        if not results:
+            print("Nothing Scheduled.")
+            return
+
+        print("Upcoming classes:")
+        print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(5)} | {"Capacity".ljust(5)} ')
+        print('-' * 95)
+        for row in results:
+            print(
+                f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[3].ljust(20)} | {row[4].ljust(5)} | {row[5].ljust(5)}')
+
+        print('-' * 95)
