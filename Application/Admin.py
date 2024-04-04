@@ -1,7 +1,7 @@
 
 
-from Application.Person import Person
-from Application.System import System
+from Person import Person
+from System import System
 
 
 class Admin(Person):
@@ -213,7 +213,7 @@ class Admin(Person):
 
             if not results:
                 print(
-                f'    {(" Room " + str(i)).ljust(15)} | {'-' * 20} | {'-' * 20} | {'-' * 20} ')
+                f'    {(" Room " + str(i)).ljust(15)} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
                 continue
             
             print(
