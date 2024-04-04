@@ -82,24 +82,16 @@ def menu(conn):
                     print("User not found")
                     menu(conn)
                 else:
-                    id, first_name, last_name = result
-                    a = Admin(first_name, last_name, id, conn)
+                    first_name, last_name = result
+                    a = Admin(first_name, last_name, conn)
                     a.options()
             case "5":
                 conn.close()
                 exit()
-            case _:
+            case _: 
                 print("Invalid option")
                 
                 
-
-
-def trainer_options(conn):
-    pass
-
-
-def admin_options(conn):
-    pass
 
 
 if __name__ == "__main__":

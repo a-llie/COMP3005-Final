@@ -15,19 +15,19 @@ class Admin(Person):
         id = input("Enter your id: ")
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT c.employee_id, c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = FLASE", [id])
+            "SELECT c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = FALSE", [id])
         found = cursor.fetchone()
         return found
 
     def options(self):
         while True:
             menu_choice = input(
-                f'{self.trainer_ID}, choose an option: \n 1. View member \n 2. Manage Rooms. \n 3. Manage Equipment \n 4. Manage Upcoming Classes \n 5. Manage Billing \n 6. Sign Out \n\n>>')
+                f'choose an option: \n 1. View member \n 2. Manage Rooms. \n 3. Manage Equipment \n 4. Manage Upcoming Classes \n 5. Manage Billing \n 6. Sign Out \n\n>>')
 
             match menu_choice:
 
                 case "1":
-                    choice = input("Would you like to search by: \n 1. username \n 2. name")
+                    choice = input("Would you like to search by: \n 1. username \n 2. name \n")
                     match choice:
                         case "1":
                             user = input("Input username: ")
