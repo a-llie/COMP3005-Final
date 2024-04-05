@@ -48,8 +48,8 @@ def clear_db(conn):
 
 def main():
     dbname = DB_NAME
-    user = 'POSTGRES_USER' #os.environ['POSTGRES_USER']
-    password = 'POSTGRES_PASS' # os.environ['POSTGRES_PASS']
+    user = os.environ['POSTGRES_USER']
+    password = os.environ['POSTGRES_PASS']
     host = HOST
     port = PORT
 
@@ -77,22 +77,6 @@ def main():
 
     execute_sql_file(TABLE_CREATION_FILE, conn)
     execute_sql_file(TABLE_POPULATION_FILE, conn)
-
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT employee_id, schedule_start FROM schedule ORDER BY employee_id, schedule_start")
-
-    print("Employee ID | Schedule Start")
-    for row in cursor.fetchall():
-        print(row)
-
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM Exercise e WHERE ( SELECT c.capacity from Class c WHERE c.class_id = e.class_id) = 1")
-
-    print("Exercise")
-    for row in cursor.fetchall():
-        print(row)
 
 
 if __name__ == "__main__":

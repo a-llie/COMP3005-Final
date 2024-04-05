@@ -2,6 +2,7 @@
 
 from Person import Person
 from System import System
+from gym_utils import Utils
 
 
 class Admin(Person):
@@ -27,7 +28,8 @@ class Admin(Person):
             match menu_choice:
 
                 case "1":
-                    choice = input("Would you like to search by: \n 1. username \n 2. name \n")
+                    choice = input(
+                        "Would you like to search by: \n 1. username \n 2. name \n")
                     match choice:
                         case "1":
                             user = input("Input username: ")
@@ -83,15 +85,31 @@ class Admin(Person):
                             continue
 
                         case "2":
-                            trainer = input("Who will teach the class: ")
-                            time = input("What time will the class be: ")
-                            exercise = input(
-                                f"What will {trainer} be teaching: ")
-                            cap = input("What is the capacity: ")
-                            if cap is None:
-                                self.__add_class(trainer, time, exercise)
-                            self.__add_class(trainer, time, exercise, cap)
 
+                            while True:
+                                trainer = Utils.prompt_for_number(
+                                    "ID of trainer who will teach the class: ")
+                                cursor = self.conn.cursor()
+                                cursor.execute(
+                                    'SELECT employee_id, first_name FROM Employee WHERE employee_id = %s AND is_trainer = true', [trainer])
+                                result = cursor.fetchone()
+                                if not result:
+                                    print("Trainer not found.")
+                                    continue
+                                break
+                            name = result[1]
+                            time = input(
+                                "When will the class be: (YYYY-MM-DD HH:MM)")
+                            exercise = input(
+                                f"What will {name} be teaching: ")
+
+                            cap = Utils.prompt_for_number(
+                                "What is the capacity: ")
+                            price = Utils.prompt_for_number(
+                                "What is the price: ")
+
+                            self.__add_class(
+                                trainer, time, exercise, price, cap)
                             continue
 
                         case "3":
@@ -135,7 +153,7 @@ class Admin(Person):
 
         print('-' * 95)
 
-    def __add_class(self, trainer_id, start, exercise, capacity=5):
+    def __add_class(self, trainer_id, start, exercise, price, capacity=5):
         cursor = self.conn.cursor()
 
         # remove that block from the free scedual of the trainer
@@ -147,7 +165,7 @@ class Admin(Person):
         room_id = System.get_free_room(self.conn, start)
         # creat class
         System.add_class(self.conn, room_id, start,
-                         trainer_id, capacity, 0, exercise)
+                         trainer_id, capacity, 0, exercise, price)
 
     def __remove_class(self, start, id):
         cursor = self.conn.cursor()
@@ -194,7 +212,7 @@ class Admin(Person):
             cursor.execute(
                 'SELECT class_id, class_time,  trainer_id, exercise_type   FROM Class WHERE room_num = %s AND class_time > current_timestamp', [i])
             results = cursor.fetchall()
-            
+
             if len(results) == 0:
                 print(
                     f'    {(" Room " + str(i)).ljust(20)} | {"-" * 20} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
@@ -234,20 +252,17 @@ class Admin(Person):
         self.conn.commit()
 
     def __bill_all(self):
-        #for each member add monthly fee to amount owing
+        # for each member add monthly fee to amount owing
         cursor = self.conn.cursor()
         cursor.execute('SELECT * FROM Club_Member')
         num = cursor.fetchone()
 
         for i in num:
             user, fee, owing, mem_type, first, last, user, height, weight = i
-            #get fee and owing
-            #add
+            # get fee and owing
+            # add
             new_owing = owing + fee
-            #change
+            # change
             cursor.execute(
                 'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [new_owing, user])
             self.conn.commit()
-
-
-

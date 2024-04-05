@@ -1,5 +1,6 @@
 from System import System
 from Person import Person
+from gym_utils import Utils
 
 
 class Member(Person):
@@ -13,26 +14,48 @@ class Member(Person):
         self.weight = weight
 
     def options(self, conn):
+        options = [
+            "Book a class or training session",
+            "Update personal information",
+            "View fitness achievements",
+            "View health statistics",
+            "See upcoming classes",
+            "Log an exercise",
+            "Exercise logbook",
+            "Pay bill",
+            "Sign Out"
+        ]
+
+        menu_choices = ""
+        for i, option in enumerate(options):
+            menu_choices += f"{i+1}. {option}\n"
+
         while True:
             menu_choice = input(
-                f'{self.username}, choose an option: \n 1. Book a class or training session \n 2. Update personal information \n 3. View fitness achievements \n 4. View health statistics \n 5. See upcoming classes. \n 6. Exercise logbook. \n 7. Pay bill \n 8. Sign Out \n\n>>')
+                f'{self.username}, choose an option: \n\n{menu_choices} \n\n>>')
 
             match menu_choice:
                 case "1":
+                    Utils.print_menu_header(options[0])
                     self.booking_choices(conn)
                 case "2":
-                    print("<insert update info here>")
+                    Utils.print_menu_header(options[1])
                 case "3":
-                    print("<insert fitness achievements here>")
+                    Utils.print_menu_header(options[2])
                 case "4":
-                    print("<insert health statistics here>")
+                    Utils.print_menu_header(options[3])
                 case "5":
+                    Utils.print_menu_header(options[4])
                     self.__see_upcoming_classes(conn)
                 case "6":
-                    self.__see_exercise_logbook(conn)
+                    Utils.print_menu_header(options[5])
                 case "7":
-                    self.__pay_bill()
+                    Utils.print_menu_header(options[6])
+                    self.__see_exercise_logbook(conn)
                 case "8":
+                    Utils.print_menu_header(options[7])
+                    self.__pay_bill()
+                case "9":
                     print("Signing out...\n\n")
                     return
                 case _:
@@ -66,8 +89,18 @@ class Member(Person):
         session = sessions[int(session_choice) - 1]
         self.book_session(session, conn)
 
-    def sign_in():
-        pass
+    def sign_in(conn):
+        user = input("Enter your username: ")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT c.username, c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [user])
+        found = cursor.fetchone()
+        if found is None:
+            print("User not found.\n")
+            return
+        else:
+            user, first_name, last_name, weight = found
+            return Member(user, first_name, last_name, weight, conn)
 
     def add_exercise(startTime, duration, exercise_type: str, weight):
         # add a exercise to the database under the current user
@@ -147,10 +180,10 @@ class Member(Person):
 
         results = cursor.fetchall()
         if not results:
-            print("No upcoming classes.")
+            print("No upcoming classes.\n")
             return
 
-        print("Upcoming classes:")
+        print("\nUpcoming classes:")
         print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Exercise Type".ljust(25)} | {"Trainer Name".ljust(25)} ')
         print('-' * 95)
         for row in results:
@@ -170,16 +203,11 @@ class Member(Person):
         print("Here are your exercises:")
         past = cursor.fetchall()
         if not past:
-            print("No exercises logged yet.")
+            print("No exercises logged yet.\n")
             return
         else:
-            date_tag = "Date"
-            exercise_tag = "Exercise Type"
-            duration_tag = "Duration"
-            weight_tag = "Weight"
-
             print(
-                f'{date_tag.ljust(20)} | {exercise_tag.ljust(15)} | {duration_tag.ljust(10)} | {weight_tag.rjust(8)}')
+                f'{"Date".ljust(20)} | {"Exercise Type".ljust(15)} | {"Duration".ljust(10)} | {"Weight".rjust(8)}')
             print('-' * 70)
             for row in past:
                 print(
@@ -194,21 +222,32 @@ class Member(Person):
         pass
 
     def __pay_bill(self):
-        #get owing
+        # get owing
         cursor = self.conn.cursor()
         cursor.execute(
-            'SELECT amount_owing FROM Club_Member WHERE username = %s', [self.username])
-        results = cursor.fetchall()[0]
-        #ask to pay
-        choice = input(f'You owe {results}\nWhould you like to pay? (y/n)')
-        if choice.lower() == 'y':
-            #connect to payment service
-            print("connecting to payment service..")
-            cursor.execute(
-                'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [0, self.username])
-            self.cursor.commit()
-            return True
-        else:
-            return False
-        
-        
+            'SELECT invoice_date, amount, invoiced_service, invoice_id FROM Invoice WHERE username = %s AND paid = false', [self.username])
+        results = cursor.fetchall()
+        if not results:
+            print("\nNo outstanding bills.\n\n")
+            return
+        i = 1
+        print(
+            f'\n# |{"Invoice Date".ljust(20)} | {"Amount".ljust(10)} | {"Service".ljust(20)} ')
+        print('-' * 55)
+        for row in results:
+            print(
+                f'{i} | {str(row[0]).ljust(20)} | {(str(row[1])).ljust(10)} | {row[2].ljust(20)}')
+            i += 1
+
+        print('-' * 55)
+
+        choice = input(
+            f'\nEnter the number of the invoice you would like to pay (0 to exit): \n>>')
+        # ask to pay
+        if choice == '0':
+            return
+        print("\nconnecting to payment service..")
+        cursor.execute(
+            'UPDATE Invoice SET paid = true WHERE invoice_id = %s', [results[int(choice) - 1][3]])
+        self.conn.commit()
+        print("Invoice paid.\n\n")

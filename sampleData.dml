@@ -1,61 +1,8 @@
-
--- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
-create or replace function set_end_time()
-returns TRIGGER as $$
-begin
-    NEW.schedule_start = DATE_TRUNC('hour', NEW.schedule_start) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
-        -- Set the end_time to be one hour after the start_time
-    NEW.schedule_end := NEW.schedule_start + INTERVAL '1 hour';
-    return NEW;
-end;
-$$ language plpgsql;
-
-create trigger before_insert_update_schedule
-before insert or update on Schedule
-for EACH row
-execute function set_end_time();
-
--- this trigger ensures that the monthly fee is set based on the membership type
-create or replace function set_fee()
-returns TRIGGER as $$
-begin
-    -- 
-    NEW.monthly_free := case NEW.membership_type
-        when 'Basic' then 50.00
-        else 75.00
-    end;
-    return NEW;
-end;
-$$ language plpgsql;
-
-create trigger before_insert_update_club_member
-before insert or update on Club_Member
-for EACH row
-execute function set_fee();
-
-
--- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
-create or replace function set_class_time()
-returns TRIGGER as $$
-begin
-    NEW.class_time = DATE_TRUNC('hour', NEW.class_time) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
-    NEW.amount_owing = 0;
-    return NEW;
-end;
-$$ language plpgsql;
-
-create trigger before_insert_update_class
-before insert or update on Class
-for EACH row
-execute function set_class_time();
-
-
-
-
-
-
+--initialize building with 8 rooms
 insert into Building(num_rooms) values (8);
 
+
+--initialize random equipment in rooms
 insert into Equipment (name, room_num, maintenance_date) 
 select 
     --generate a random equipment name
@@ -73,15 +20,26 @@ select
     floor(random() * 8) + 1 as room_num,
     --generate a random maintenance date between today and 90 days ahead
     NOW() + (random() * (NOW()+'90 days' - NOW())) as maintenance_date
-from generate_series(1, 20) as i;
+from generate_series(1, 100) as i;
 
 
+--initialize employees
 insert into Employee (first_name, last_name, is_trainer) values
 ('John', 'Doe', true),
 ('Alice', 'Smith', true),
 ('Michael', 'Johnson', true),
 ('Emma', 'Brown', true),
 ('Christopher', 'Davis', true),
+('Olivia', 'Miller', true),
+('James', 'Wilson', true),
+('Sophia', 'Moore', true),
+('William', 'Taylor', true),
+('Isabella', 'Anderson', true),
+('John', 'Doe', false),
+('Alice', 'Smith', false),
+('Michael', 'Johnson', false),
+('Emma', 'Brown', false),
+('Christopher', 'Davis', false),
 ('Olivia', 'Miller', false),
 ('James', 'Wilson', false),
 ('Sophia', 'Moore', false),
@@ -89,17 +47,18 @@ insert into Employee (first_name, last_name, is_trainer) values
 ('Isabella', 'Anderson', false);
 
 
-
-insert into Club_Member (username, membership_type, first_name, last_name, user_weight, height, weight_goal) 
+--initialize club members
+insert into Club_Member (username, join_date, membership_type, first_name, last_name, user_weight, height, weight_goal) 
 select
-    --generate a random username
+    -- random username
     'user' || floor(random() * 1000) as username,
-    --generate a random monthly fee of either 50 or 75
+    -- random join date between today and 90 days ago
+    NOW() - (random() * (NOW()+'90 days' - NOW())) as join_date,
     case floor(random() * 2)
         when 0 then 'Basic'
         else 'Pro'
     end as membership_type,
-    --generate a random first name
+    -- random first name
     case floor(random() * 10)
         when 0 then 'Alice'
         when 1 then 'Bob'
@@ -113,7 +72,7 @@ select
         when 9 then 'Judy'
         else 'Eve'
     end as first_name,
-    --generate a random last name
+    -- random last name
     case floor(random() * 10)
         when 0 then 'Smith'
         when 1 then 'Johnson'
@@ -127,48 +86,63 @@ select
         when 9 then 'Thomas'
         else 'Wilson'
     end as last_name,
-    --generate a random weight between 50 and 100
+    -- weight between 50 and 100
     floor(random() * 51) + 50 as user_weight,
-    --generate a random height between 150 and 200
+    -- height between 150 and 200
     floor(random() * 51) + 150 as height,
-    --generate a random weight goal between 50 and 100
+    --weight goal between 50 and 100 (doesn't have to make sense)
     floor(random() * 51) + 45 as weight_goal
-from generate_series(1, 20) as i
+from generate_series(1, 100) as i
 on CONFLICT (username) DO NOTHING;
 
+-- schedules for trainers
 insert into Schedule (employee_id, schedule_start) 
 select
     -- Select a random trainer_id from 1 to 5 (assuming there are 5 trainers)
     floor(random() * 5) + 1 as employee_id,
     -- Select a random timestamp from today to 90 days ahead between hours of 8:00 and 18:00
     NOW() + (random() * (NOW()+'90 days' - NOW())) as schedule_start
-from generate_series(1, 20) as i
+from generate_series(1, 100) as i
 on conflict (employee_id, schedule_start) do nothing;
 
 
 
-insert into Class(room_num, trainer_id, class_time, capacity, registered, exercise_type)
-select 
-    -- Select room number randomly from 1 to 8
+
+-- classes
+insert into Class(room_num, trainer_id, class_time, capacity, registered, exercise_type, price)
+select
     floor(random() * 8) + 1 as room_num,
     -- Select trainer_id randomly from 1 to 5 (assuming there are 5 trainers)
     floor(random() * 5) + 1 as trainer_id,
-    -- Select a random timestamp from 90 days ago to 90 days ahead that is exactly on the hour 
+    -- random timestamp from 90 days ago to 90 days ahead 
     ('2024-01-01 08:00:00'::timestamp + (random() * (NOW() + '90 days' - NOW()))) as class_time,    -- Set capacity to a random number between 10 and 30
     floor(random() * 21) + 10 as capacity,
     0 as registered,
     -- Choose exercise type randomly
-    CASE floor(random() * 3)
+    CASE floor(random() * 8)
         when 0 then 'Cardio'
         when 1 then 'Strength'
+        when 2 then 'HIIT'
+        when 3 then 'Pilates'
+        when 4 then 'Zumba'
+        when 5 then 'Kickboxing'
+        when 6 then 'Cycling'
         ELSE 'Yoga'
-    end as exercise_type
-from generate_series(1, 25) as i
+    end as exercise_type,
+    -- Set price to a random number between 10 and 30
+    CASE floor(random() * 3)
+        when 0 then 25.00
+        when 1 then 50.00
+        ELSE 75.00
+    end as price
+from generate_series(1, 100) as i
 where not exists -- no overlapping room_num, trainer_id, and class_time
 (select * from Class c where c.trainer_id = trainer_id and c.class_time = class_time)
 on conflict (room_num, class_time) do nothing;
 
 
+
+-- add participants to classes 
 DO $$
 declare
     i integer;
@@ -240,7 +214,7 @@ begin
         limit 1;
 
         if chosen_trainer_id is not null and chosen_time is not null and chosen_user is not null then
-            insert into Class (room_num, trainer_id, class_time, capacity, registered, exercise_type)
+            insert into Class (room_num, trainer_id, class_time, capacity, registered, exercise_type, price)
             select 
                 -- Select room number randomly from 1 to 8
                 floor(random() * 8) + 1 as room_num,
@@ -248,7 +222,8 @@ begin
                 chosen_time as class_time,
                 1 as capacity,
                 1 as registered, 
-                'personal training' as exercise_type
+                'personal training' as exercise_type,
+                50.00 as price
             -- update registered count
             where not exists -- no overlapping room_num, and class_time
             (select * from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time);
@@ -270,6 +245,21 @@ begin
 end $$;
 
 
-INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type)
+INSERT INTO Club_Member (username, join_date,first_name, last_name, user_weight, height, weight_goal, membership_type)
 VALUES
- ('testuser',  'Test', 'User', 123, 123, 123, 'Basic');
+ ('testuser', NOW(),  'Test', 'User', 123, 123, 123, 'Basic');
+
+
+
+INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
+SELECT 
+    NOW() - (random() * (NOW()+'90 days' - NOW())) as invoice_date,
+    club_member.username,
+    club_member.monthly_fee as amount,
+    'Membership Fee' as invoiced_service,
+    -- randomly paid or not paid, unless the user is 'testuser' who is always unpaid
+    CASE 
+        WHEN club_member.username = 'testuser' THEN false
+        ELSE random() < 0.67
+    END as paid
+FROM Club_Member
