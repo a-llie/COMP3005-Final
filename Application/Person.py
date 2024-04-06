@@ -1,11 +1,18 @@
+from abc import abstractmethod
+import psycopg2
+from psycopg2 import sql
+
+
 class Person():
     first_name: str
     last_name: str
-    username: str
+    conn: psycopg2._psycopg.connection
 
-    def __init__(self, first_name, last_name, username) -> None:
+    def __init__(self, first_name, last_name, conn) -> None:
         self.first_name = first_name
         self.last_name = last_name
-        self.username = username
+        self.conn = conn
 
-        print(f'Person {self.first_name} {self.last_name} created.')
+    @abstractmethod
+    def options(self):
+        pass

@@ -7,14 +7,15 @@ class Member(Person):
     username: str
     weight: int
 
-    def __init__(self, username, first_name, last_name, weight) -> None:
-        Person.__init__(self, first_name, last_name, username)
+    def __init__(self, username, first_name, last_name, weight, conn) -> None:
+        Person.__init__(self, first_name, last_name, conn)
+        self.username = username
         self.weight = weight
 
     def options(self, conn):
         while True:
             menu_choice = input(
-                f'{self.username}, choose an option: \n 1. Book a class or training session \n 2. Update personal information \n 3. View fitness achievements \n 4. View health statistics \n 5. See upcoming classes. \n 6. Exercise logbook. \n 7. Sign Out \n\n>>')
+                f'{self.username}, choose an option: \n 1. Book a class or training session \n 2. Update personal information \n 3. View fitness achievements \n 4. View health statistics \n 5. See upcoming classes. \n 6. Exercise logbook. \n 7. Pay bill \n 8. Sign Out \n\n>>')
 
             match menu_choice:
                 case "1":
@@ -30,12 +31,13 @@ class Member(Person):
                 case "6":
                     self.__see_exercise_logbook(conn)
                 case "7":
+                    self.__pay_bill()
+                case "8":
                     print("Signing out...\n\n")
                     return
                 case _:
                     print("Invalid option")
-                    self.options(conn)
-                    return
+                    # self.options(conn)
 
     def booking_choices(self, conn):
         slot_choice = input(
@@ -65,11 +67,6 @@ class Member(Person):
         self.book_session(session, conn)
 
     def sign_in():
-        pass
-
-    # member
-    def register():
-        # insert feilds and submit
         pass
 
     def add_exercise(startTime, duration, exercise_type: str, weight):
@@ -116,23 +113,12 @@ class Member(Person):
         cursor = conn.cursor()
 
         # find free room
-        cursor.execute('SELECT num_rooms FROM Building')
-        num_rooms = cursor.fetchone()[0]
-
-        for i in range(num_rooms):
-            cursor.execute(
-                'SELECT c.room_num FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [i, session[1]])
-            if not cursor.fetchone():
-                room_id = i
-                break
+        room_id = System.get_free_room(conn, session[1])
 
         print(f'Room {room_id} is available.')
 
-        cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type) VALUES (%s, %s, %s, %s, %s, %s)', [room_id, session[1], session[0], 1, 1, exersise])
-        # books a one hour block of the schedule
-        conn.commit()
+        # book a one hour block of the schedule
+        System.add_class(conn, room_id, session[1], session[0], 1, 1, exersise)
 
         cursor.execute(
             'SELECT class_id FROM Class WHERE room_num = %s AND class_time = %s', [room_id, session[1]])
@@ -206,3 +192,23 @@ class Member(Person):
             'INSERT INTO Exercise (duration, exercise_date, exercise_type, class_id, username, weight) VALUES (%s, %s, %s, %s, %s, %s)', [duration, startTime, exercise_type, class_id, self.username, self.weight])
         conn.commit()
         pass
+
+    def __pay_bill(self):
+        #get owing
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT amount_owing FROM Club_Member WHERE username = %s', [self.username])
+        results = cursor.fetchall()[0]
+        #ask to pay
+        choice = input(f'You owe {results}\nWhould you like to pay? (y/n)')
+        if choice.lower() == 'y':
+            #connect to payment service
+            print("connecting to payment service..")
+            cursor.execute(
+                'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [0, self.username])
+            self.cursor.commit()
+            return True
+        else:
+            return False
+        
+        

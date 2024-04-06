@@ -19,7 +19,7 @@ execute function set_end_time();
 create or replace function set_fee()
 returns TRIGGER as $$
 begin
-    -- Set the end_time to be one hour after the start_time
+    -- 
     NEW.monthly_free := case NEW.membership_type
         when 'Basic' then 50.00
         else 75.00
@@ -39,6 +39,7 @@ create or replace function set_class_time()
 returns TRIGGER as $$
 begin
     NEW.class_time = DATE_TRUNC('hour', NEW.class_time) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
+    NEW.amount_owing = 0;
     return NEW;
 end;
 $$ language plpgsql;

@@ -3,7 +3,9 @@
 import psycopg2
 from psycopg2 import sql
 import os
+from Trainer import Trainer
 from Member import Member
+from Admin import Admin
 from System import System
 
 
@@ -47,7 +49,7 @@ def menu(conn):
                 cursor.execute(
                     "SELECT c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [username])
                 first_name, last_name, weight = cursor.fetchone()
-                m = Member(username, first_name, last_name, weight)
+                m = Member(username, first_name, last_name, weight, conn)
                 m.options(conn)
             case "2":
                 # temporary until sign in done
@@ -61,27 +63,35 @@ def menu(conn):
                     menu(conn)
                 else:
                     user, first_name, last_name, weight = found
-                    m = Member(user, first_name, last_name, weight)
+                    m = Member(user, first_name, last_name, weight, conn)
                     m.options(conn)
             case "3":
-                print("<insert trainer sign in here>")
+                # print("<insert trainer sign in here>")
+                result = Trainer.sign_in(conn)
+                if result is None:
+                    print("User not found")
+                    menu(conn)
+                else:
+                    id, first_name, last_name = result
+                    t = Trainer(first_name, last_name, id, conn)
+                    t.options()
+
             case "4":
-                print("<insert admin sign in here>")
+                result = Admin.sign_in(conn)
+                if result is None:
+                    print("User not found")
+                    menu(conn)
+                else:
+                    first_name, last_name = result
+                    a = Admin(first_name, last_name, conn)
+                    a.options()
             case "5":
                 conn.close()
                 exit()
-            case _:
+            case _: 
                 print("Invalid option")
-                menu(conn)
-                return
-
-
-def trainer_options(conn):
-    pass
-
-
-def admin_options(conn):
-    pass
+                
+                
 
 
 if __name__ == "__main__":
