@@ -7,8 +7,8 @@ create table Employee (
 
 create table Club_Member ( 
     username varchar(255) not null primary key,
-    monthly_free float not null,
-    amount_owing float not null,
+    join_date date not null,
+    monthly_fee float not null,
     membership_type varchar(255) not null,
     first_name varchar(255) not null,
     last_name varchar(255) not null,
@@ -37,10 +37,8 @@ create table Class (
     capacity integer not null,
     registered integer not null,
     exercise_type varchar(255) not null,
+    price float not null,
 
-
-    unique(trainer_id, class_time),
-    unique(room_num, class_time),
     foreign key (trainer_id) references Employee(employee_id),
     constraint unique_class UNIQUE (room_num, class_time),
     constraint class_capacity_constraint CHECK (registered <= capacity)
@@ -77,3 +75,57 @@ create table Exercise (
     foreign key (username) references Club_Member(username),
     primary key (class_id, username)
 );
+
+
+
+-- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
+create or replace function set_end_time()
+returns TRIGGER as $$
+begin
+    NEW.schedule_start = DATE_TRUNC('hour', NEW.schedule_start) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
+        -- Set the end_time to be one hour after the start_time
+    NEW.schedule_end := NEW.schedule_start + INTERVAL '1 hour';
+    return NEW;
+end;
+$$ language plpgsql;
+
+create trigger before_insert_update_schedule
+before insert or update on Schedule
+for EACH row
+execute function set_end_time();
+
+-- this trigger ensures that the monthly fee is set based on the membership type
+create or replace function set_fee()
+returns TRIGGER as $$
+begin
+    -- 
+    NEW.monthly_fee := case NEW.membership_type
+        when 'Basic' then 50.00
+        else 75.00
+    end;
+    return NEW;
+    INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
+    VALUES 
+        (NEW.join_date, NEW.username, NEW.monthly_fee, 'Membership Fee', false);
+end;
+$$ language plpgsql;
+
+create trigger before_insert_club_member
+before insert or update on Club_Member
+for EACH row
+execute function set_fee();
+
+
+-- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time
+create or replace function set_class_time()
+returns TRIGGER as $$
+begin
+    NEW.class_time = DATE_TRUNC('hour', NEW.class_time) + INTERVAL '0 minutes' + INTERVAL '0 seconds' ;
+    return NEW;
+end;
+$$ language plpgsql;
+
+create trigger before_insert_update_class
+before insert or update on Class
+for EACH row
+execute function set_class_time();

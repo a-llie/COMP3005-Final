@@ -7,13 +7,27 @@ MAINTANANCE_INTERVAL = 3  # months
 
 
 class System():
+    @staticmethod
+    def prompt_for_number(prompt: str):
+        while True:
+            try:
+                return int(input(prompt))
+            except ValueError:
+                print("\nInvalid input.\n")
 
     @staticmethod
-    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise):
+    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price):
         cursor = conn.cursor()
         cursor.execute(
-            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type) VALUES (%s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise])
+            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type,price) VALUES (%s, %s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise, price])
         conn.commit()
+
+        cursor.execute(
+            'SELECT class_id FROM Class WHERE room_num = %s AND class_time = %s', [room_id, start])
+
+        exer_class = cursor.fetchone()
+
+        print(f"Class {exer_class[0]} added successfully.")
 
     @staticmethod
     def get_free_room(conn, time):
@@ -37,47 +51,46 @@ class System():
     @staticmethod
     def create_new_user(conn):
         username = input("Enter a username: ")
-        first_name = input("Enter your first name: ")
-        last_name = input("Enter your last name: ")
 
-        try:
-            weight = int(input("Enter your weight: "))
-        except ValueError:
-            print("Invalid weight")
-            return
-
-        try:
-            height = int(input("Enter your height: "))
-        except ValueError:
-            print("Invalid height")
-            return
-
-        try:
-            weight_goal = input("Enter your weight goal: ")
-        except ValueError:
-            print("Invalid weight goal")
-            return
-
-        try:
-            membership_type = int(
-                input("Enter your membership type: 1. Basic, 50$/month, 2. Pro, 75$/month"))
-        except ValueError:
-            print("Invalid membership type")
-            return
-
-        if membership_type not in [1, 2]:
-            print("Invalid membership type")
-            return
-
-        cursor = conn.cursor()
-        try:
+        while True:
+            cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type) VALUES (%s, %s, %s, %s, %s, %s, %s)', [username, first_name, last_name, weight, height, weight_goal, membership_type])
-        except psycopg2.errors.UniqueViolation:
-            print("Username already exists")
-            return
+                "SELECT * FROM Club_Member WHERE username = %s", [username])
+            if cursor.fetchone():
+                print("\nUsername already exists.\n")
+                username = input("Enter a username: ")
+            else:
+                break
 
-        print("User created successfully.")
+        first_name = input("Enter your first name: ")
+        while not first_name:
+            first_name = input("Enter your first name: ")
+
+        last_name = input("Enter your last name: ")
+        while not last_name:
+            last_name = input("Enter your last name: ")
+
+        weight = System.prompt_for_number("Enter your weight: ")
+        weight_goal = System.prompt_for_number("Enter your weight goal: ")
+        height = System.prompt_for_number("Enter your height: ")
+
+        membership_type = None
+        while True:
+            membership_type = System.prompt_for_number(
+                "Enter your membership type: 1. Basic, 50$/month, 2. Pro, 75$/month: ")
+            if membership_type not in [1, 2]:
+                print("Invalid membership type\n")
+                continue
+            break
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type, join_date) VALUES (%s, %s, %s, %s, %s, %s, %s,NOW())', [username, first_name, last_name, weight, height, weight_goal, membership_type])
+
+        membership_fee = 50.00 if membership_type == 1 else 75.00
+        cursor.execute(
+            'INSERT INTO Invoice(username, invoice_date, amount, invoiced_service, paid) VALUES (%s, NOW(), %s, %s, %s)', [username, membership_fee, 'Membership Fee', 'false'])
+
+        print(f"\nUser {username} created successfully.\n")
         conn.commit()
 
         return username
@@ -148,19 +161,3 @@ class System():
                 f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[3].ljust(20)} | {row[4].ljust(5)} | {row[5].ljust(5)}')
 
         print('-' * 95)
-
-    @staticmethod
-    def timestamp_to_datetime(ts) -> datetime:
-        f = '%Y-%m-%d %H:%M:%S'
-        return datetime.strptime(ts,f)
-    
-    @staticmethod
-    def datetime_to_timestamp(dt : datetime):
-        f = '%Y-%m-%d %H:%M:%S'
-        return dt.strftime(f)
-    
-    @staticmethod
-    def timestamp_add_hour(ts):
-        dt = System.timestamp_to_datetime(ts)
-        dt += timedelta(hours=1)
-        return System.datetime_to_timestamp(dt)
