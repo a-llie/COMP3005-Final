@@ -38,6 +38,7 @@ create table Class (
     registered integer not null,
     exercise_type varchar(255) not null,
     price float not null,
+
     foreign key (trainer_id) references Employee(employee_id),
     constraint unique_class UNIQUE (room_num, class_time),
     constraint class_capacity_constraint CHECK (registered <= capacity)
