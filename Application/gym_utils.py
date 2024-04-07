@@ -49,21 +49,32 @@ class Utils():
     @staticmethod
     @dispatch(list, int)
     def table_row_print(matrix: list, i: int):
-        string = str(i) + ". | "
+        string = ""
+        if i < 10:
+            string = str(i) + ".  |"
+        elif i >= 10 and i < 100:
+            string = str(i) + ". |"
+        else:
+            string = str(i) + ".|"
         for row in matrix:
             string += f" {row[0].ljust(row[1])} |"
         print(string)
 
     @staticmethod
-    @dispatch(list, list, list, int, bool)
-    def print_table(header, data, widths, header_width, numbered: bool = False):
+    def print_table(header, data, widths, numbered: bool = False):
         Utils.table_row_print(header)
+        header_width = sum(widths) + 3*(len(widths))
+        if numbered:
+            header_width += 4
         print("-" * header_width)
         j = 1
         for d in data:
             list = []
-            for i, v in enumerate(d):
-                list.append((str(v), widths[i]))
+            if type(d) != str:
+                for i, v in enumerate(d):
+                    list.append((str(v), widths[i]))
+            else:
+                list.append((d, header_width))
             if numbered:
                 Utils.table_row_print(list, j)
                 j += 1
@@ -73,7 +84,7 @@ class Utils():
 
     @staticmethod
     def OK():
-        input("OK [Enter]")
+        input("\nOK [Enter]\n")
 
     @staticmethod
     def calculate_net(start: int, end: int):
@@ -82,3 +93,17 @@ class Utils():
             return "+" + str(result)
         else:
             return str(result)
+
+    @staticmethod
+    def prompt_for_number(prompt: str):
+        while True:
+            try:
+                return int(input(prompt))
+            except ValueError:
+                print("\nInvalid input.\n")
+
+    @staticmethod
+    def number_to_month(number: int):
+        months = ["January", "February", "March", "April", "May", "June",
+                  "July", "August", "September", "October", "November", "December"]
+        return months[number-1]

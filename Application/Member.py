@@ -60,11 +60,21 @@ class Member(Person):
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option. \n\n")
 
     def booking_choices(self):
+        choices = [
+            "Book a class",
+            "Book a training session",
+            "Back"
+        ]
+
+        menu_choices = ""
+        for i, option in enumerate(choices):
+            menu_choices += f"{i+1}. {option}\n"
+
         slot_choice = input(
-            "Choose an option: \n 1. Book a class \n 2. Book a training session \n 3. Back \n\n>>")
+            f"Choose an option: \n {menu_choices} \n\n>>")
         match slot_choice:
             case "1":
                 self.class_booking_process()
@@ -136,7 +146,7 @@ class Member(Person):
 
         results = cursor.fetchall()
         Utils.print_table(
-            [("Date", 20), ("Weight", 10), ("Cardio Time", 15), ("Lift Weight", 11)], results, [20, 10, 15, 11], 68)
+            [("Date", 20), ("Weight", 10), ("Cardio Time", 15), ("Lift Weight", 11)], results, [20, 10, 15, 11])
 
         print("\n\nNet Change: \n")
 
@@ -163,19 +173,6 @@ class Member(Person):
             employee_name = Utils.trainer_id_to_name(session[0], self.conn)
             Utils.table_row_print(
                 [(str(i), 2), (employee_name[0] + " " + employee_name[1], 25), (str(session[1]), 20)])
-        print(f'{"-"*55}\n')
-
-    def browse_classes(self, sessions):
-        print("Here are all the available classes\n")
-        i = 0
-        Utils.table_row_print(
-            [(" #", 2), ("Trainer Name", 25), ("Session Time", 20)])
-        print(f'{"-"*55}')
-        for session in sessions:
-            i += 1
-            employee_name = Utils.trainer_id_to_name(session[5], self.conn)
-            Utils.table_row_print(
-                [(str(i), 2), (employee_name[0] + " " + employee_name[1], 25), (str(session[0]), 20)])
         print(f'{"-"*55}\n')
 
     # data step of booking a personal training session
@@ -248,7 +245,7 @@ class Member(Person):
             full_results.append(row)
 
         Utils.print_table(
-            [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("Trainer Name", 25)], full_results, [20, 15, 25, 25], 95)
+            [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("Trainer Name", 25)], full_results, [20, 15, 25, 25])
 
         print("\n")
         Utils.OK()
@@ -266,7 +263,7 @@ class Member(Person):
         else:
             Utils.print_table(
                 [("Date", 20), ("Exercise Type", 15),
-                 ("Duration", 10)], past, [20, 15, 10], 54)
+                 ("Duration", 10)], past, [20, 15, 10])
             print("\n")
             Utils.OK()
 
@@ -308,12 +305,12 @@ class Member(Person):
 
         Utils.print_table(
             [("#", 0), ("Invoice Date", 21), ("Amount", 10),
-             ("Service", 15)], full_results, [20, 10, 15], 57, True
+             ("Service", 15)], full_results, [20, 10, 15], True
         )
 
         choice = input(
             f'\nEnter the number of the invoice you would like to pay (0 to exit): \n>>')
-        # ask to pay
+
         if choice == '0':
             return
 

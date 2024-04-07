@@ -96,7 +96,7 @@ def menu(conn):
             case "6":
                 debug_menu(conn)
             case _:
-                print("Invalid option")
+                print("Invalid option.\n")
 
 
 def debug_menu(conn):
@@ -126,7 +126,7 @@ def debug_menu(conn):
         elif menu_choice == len(tables)+1:
             menu(conn)
         else:
-            print("Invalid option")
+            print("Invalid option.\n")
 
 
 if __name__ == "__main__":

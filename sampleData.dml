@@ -20,8 +20,8 @@ select
     end as name,
     --generate a random room number between 1 and 8
     floor(random() * 8) + 1 as room_num,
-    --generate a random maintenance date between today and 90 days ahead
-    NOW() + (random() * (NOW()+'90 days' - NOW())) as maintenance_date
+    --generate a random maintenance date between today and 35 days ago
+    NOW() - (random() * (NOW()+'35 days' - NOW())) as maintenance_date
 from generate_series(1, 100) as i;
 
 
@@ -138,7 +138,7 @@ select
         when 1 then 50.00
         ELSE 75.00
     end as price
-from generate_series(1, 100) as i
+from generate_series(1, 300) as i
 where not exists -- no overlapping room_num, trainer_id, and class_time
 (select * from Class c where c.trainer_id = trainer_id and c.class_time = class_time)
 on conflict (room_num, class_time) do nothing;
