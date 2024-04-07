@@ -112,7 +112,7 @@ class Admin(Person):
                                 break
                             name = result[1]
                             time = input(
-                                "When will the class be (YYYY-MM-DD HH:MM): ")
+                                "When will the class be (YYYY-MM-DD HH:MM):")
                             exercise = input(
                                 f"What will {name} be teaching: ")
 
@@ -267,9 +267,9 @@ class Admin(Person):
     def __bill_all(self):
         # for each member add monthly fee to amount owing
         cursor = self.conn.cursor()
-        cursor.execute('SELECT username, monthly_fee FROM Club_Member')
+        cursor.execute('SELECT c.username, c.monthly_fee FROM Club_Member c ')
         num = cursor.fetchone()
-
+        print(num)
         for i in num:
             user, fee = i
             cursor.execute(

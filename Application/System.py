@@ -39,6 +39,8 @@ class System():
         cursor.execute('SELECT num_rooms FROM Building')
         num_rooms = cursor.fetchone()[0]
 
+        i = 1
+        
         for i in range(num_rooms):
             cursor.execute(
                 'SELECT c.room_num FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [i, time])
