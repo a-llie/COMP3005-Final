@@ -254,15 +254,66 @@ VALUES
 
 
 
-INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
+INSERT INTO Invoice (invoice_date, username, amount, paid)
 SELECT 
-    NOW() - (random() * (NOW()+'90 days' - NOW())) as invoice_date,
+-- random 1st of a month as date between 1 and 3 months ago
+
+    date_trunc('month', NOW()) - (interval '1 month' * floor(random() * 3)) as invoice_date,
     club_member.username,
     club_member.monthly_fee as amount,
-    'Membership Fee' as invoiced_service,
     -- randomly paid or not paid, unless the user is 'testuser' who is always unpaid
     CASE 
         WHEN club_member.username = 'testuser' THEN false
         ELSE random() < 0.67
     END as paid
-FROM Club_Member
+FROM Club_Member;
+
+
+-- insert unpaid invoices for classes that have not happened yet 
+INSERT INTO Invoice (invoice_date, invoiced_service, username, amount, paid)
+SELECT 
+    class_time as invoice_date,
+    class_id as invoiced_service,
+    username,
+    price as amount,
+    false as paid
+FROM (
+    SELECT 
+        c.class_time,
+        c.price,
+        e.class_id,
+        e.username
+    FROM Class c
+    JOIN Exercise e ON c.class_id = e.class_id
+) as class_participants
+WHERE class_time > NOW() AND NOT EXISTS (
+    SELECT * 
+    FROM Invoice i
+    WHERE i.username = class_participants.username
+    AND i.invoice_date = class_participants.class_time
+);
+
+
+-- insert unpaid/paid invoices for classes that have already happened
+INSERT INTO Invoice (invoice_date, invoiced_service, username, amount, paid)
+SELECT 
+    class_time as invoice_date,
+    class_id as invoiced_service,
+    username,
+    price as amount,
+    random() < 0.67 as paid
+FROM (
+    SELECT 
+        c.class_time,
+        c.price,
+        e.class_id,
+        e.username
+    FROM Class c
+    JOIN Exercise e ON c.class_id = e.class_id
+) as class_participants
+WHERE class_time <= NOW() AND NOT EXISTS (
+    SELECT * 
+    FROM Invoice i
+    WHERE i.username = class_participants.username
+    AND i.invoice_date = class_participants.class_time
+)

@@ -227,16 +227,29 @@ class Member(Person):
         cursor.execute(
             'SELECT invoice_date, amount, invoiced_service, invoice_id FROM Invoice WHERE username = %s AND paid = false', [self.username])
         results = cursor.fetchall()
+
         if not results:
             print("\nNo outstanding bills.\n\n")
+            input("OK [Enter]")
             return
         i = 1
         print(
             f'\n# |{"Invoice Date".ljust(20)} | {"Amount".ljust(10)} | {"Service".ljust(20)} ')
         print('-' * 55)
         for row in results:
+            service = ""
+            if row[2] is None:
+                service = "Membership Fee"
+            else:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    'SELECT exercise_type FROM Class WHERE class_id = %s AND class_time < NOW()', [row[2]])
+                service = cursor.fetchone()[0]
+                if service is None:
+                    continue
+
             print(
-                f'{i} | {str(row[0]).ljust(20)} | {(str(row[1])).ljust(10)} | {row[2].ljust(20)}')
+                f'{i} | {str(row[0]).ljust(20)} | {(str(row[1])).ljust(10)} | {service.ljust(20)}')
             i += 1
 
         print('-' * 55)

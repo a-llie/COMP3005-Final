@@ -59,7 +59,7 @@ create table Invoice (
     invoice_date date not null,
     username varchar(255) not null,
     amount float not null,
-    invoiced_service varchar(255) not null,
+    invoiced_service integer,
     paid boolean not null,
     foreign key (username) references Club_Member(username)
 );

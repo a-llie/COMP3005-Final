@@ -86,10 +86,6 @@ class System():
         cursor.execute(
             'INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type, join_date) VALUES (%s, %s, %s, %s, %s, %s, %s,NOW())', [username, first_name, last_name, weight, height, weight_goal, membership_type])
 
-        membership_fee = 50.00 if membership_type == 1 else 75.00
-        cursor.execute(
-            'INSERT INTO Invoice(username, invoice_date, amount, invoiced_service, paid) VALUES (%s, NOW(), %s, %s, %s)', [username, membership_fee, 'Membership Fee', 'false'])
-
         print(f"\nUser {username} created successfully.\n")
         conn.commit()
 
@@ -97,7 +93,7 @@ class System():
 
     @staticmethod
     @dispatch(str, psycopg2.extensions.connection)
-    def get_member(username, conn):
+    def find_members(username, conn):
         cursor = conn.cursor()
         cursor.execute(
             "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE username LIKE %s", ['%' + username + '%'])
@@ -105,7 +101,7 @@ class System():
 
     @staticmethod
     @dispatch(str, str, psycopg2.extensions.connection)
-    def get_member(first, last, conn):
+    def find_members(first, last, conn):
         cursor = conn.cursor()
         cursor.execute(
             "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name LIKE %s AND last_name LIKE %s", [first, last])

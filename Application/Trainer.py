@@ -40,7 +40,7 @@ class Trainer(Person):
                         match choice:
                             case "1":
                                 user = input("Input username: ")
-                                out = System.get_member(user, self.conn)
+                                out = System.find_members(user, self.conn)
 
                                 if out is None:
                                     print("User not found")
@@ -70,7 +70,8 @@ class Trainer(Person):
                             case "2":
                                 first = input("Input first name: ")
                                 last = input("Input last name: ")
-                                out = System.get_member(first, last, self.conn)
+                                out = System.find_members(
+                                    first, last, self.conn)
                                 # display
                                 System.print_member(out)
 
