@@ -14,6 +14,7 @@ class Admin(Person):
     @staticmethod
     def sign_in(conn):
         id = input("Enter your id: ")
+        print("\n")
         cursor = conn.cursor()
         cursor.execute(
             "SELECT c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = FALSE", [id])
@@ -35,6 +36,11 @@ class Admin(Person):
                             user = input("Input username: ")
                             out = System.get_member(user, self.conn)
                             # dispaly
+                            print(out)
+
+                            if out == [] or out is None:
+                                print("Not Found\n")
+                                continue
                             System.print_member(out)
 
                             input("")
@@ -45,6 +51,9 @@ class Admin(Person):
                             last = input("Input last name: ")
                             out = System.get_member(first, last, self.conn)
                             # dispaly
+                            if out == [] or out is None:
+                                print("Not Found\n")
+                                continue
                             System.print_member(out)
 
                             input("")
@@ -52,10 +61,12 @@ class Admin(Person):
 
                         case _:
                             print("Invalid option")
+                            print("")
 
                 case "2":
                     # add a ability to toggle a romm so that it cant be booked?
                     self.__view_rooms()
+                    input("")
 
                 case "3":
                     choice = input(
@@ -64,6 +75,7 @@ class Admin(Person):
                         case "1":
 
                             self.__get_all_equipment()
+                            input("")
                             continue
 
                         case "2":
@@ -82,6 +94,7 @@ class Admin(Person):
                         case "1":
 
                             self.__get_class_schedule()
+                            input("")
                             continue
 
                         case "2":
@@ -99,7 +112,7 @@ class Admin(Person):
                                 break
                             name = result[1]
                             time = input(
-                                "When will the class be: (YYYY-MM-DD HH:MM)")
+                                "When will the class be (YYYY-MM-DD HH:MM): ")
                             exercise = input(
                                 f"What will {name} be teaching: ")
 
@@ -136,7 +149,7 @@ class Admin(Person):
         cursor = self.conn.cursor()
 
         cursor.execute(
-            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c WHERE c.class_time > current_timestamp ORDER BY class_time DESC')
+            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c WHERE c.class_time > current_timestamp ORDER BY class_time')
 
         results = cursor.fetchall()
         if not results:
@@ -147,7 +160,7 @@ class Admin(Person):
         print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Trainer ID".ljust(20)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(10)} | {"Capacity".ljust(10)} ')
         print('-' * 95)
         for row in results:
-            print(row)
+            #print(row)
             print(
                 f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {str(row[2]).ljust(20)} | {str(row[3]).ljust(20)} | {str(row[4]).ljust(10)} | {str(row[5]).ljust(10)}')
 
@@ -164,8 +177,7 @@ class Admin(Person):
         # pick a free room (in system.py)
         room_id = System.get_free_room(self.conn, start)
         # creat class
-        System.add_class(self.conn, room_id, start,
-                         trainer_id, capacity, 0, exercise, price)
+        System.add_class(self.conn, room_id, start, trainer_id, capacity, 0, exercise, price)
 
     def __remove_class(self, start, id):
         cursor = self.conn.cursor()
@@ -205,7 +217,7 @@ class Admin(Person):
         # header
         print("Rooms in Building 1:")  # CURRENTLY HARD CODDED
         print(f'     {"Room Number".ljust(20)} | {"Class ID".ljust(20)} | {"Class Time".ljust(20)} | {"Trainer".ljust(20)} | {"Exercise Type".ljust(20)}  ')
-        print('-' * 95)
+        print('-' * 115)
 
         # print body
         for i in range(num_rooms):
@@ -217,17 +229,18 @@ class Admin(Person):
                 print(
                     f'    {(" Room " + str(i)).ljust(20)} | {"-" * 20} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
                 continue
-            results = results[0]
-            print(
-                f'    {(" Room " + str(i)).ljust(20)} | {str(results[0]).ljust(20)} | {str(results[1]).ljust(20)} | {str(results[2]).ljust(20)} | {results[3].ljust(20)}')
 
-        print('-' * 95)
+            for thing in results:
+                print(
+                    f'    {(" Room " + str(i)).ljust(20)} | {str(thing[0]).ljust(20)} | {str(thing[1]).ljust(20)} | {str(thing[2]).ljust(20)} | {thing[3].ljust(20)}')
+
+        print('-' * 115)
 
     def __get_all_equipment(self):
         cursor = self.conn.cursor()
 
         cursor.execute(
-            'SELECT equipment_id, name, room_num, maintenance_date FROM Equipment')
+            'SELECT equipment_id, name, room_num, maintenance_date FROM Equipment ORDER BY equipment_id')
 
         results = cursor.fetchall()
         if not results:
@@ -254,15 +267,11 @@ class Admin(Person):
     def __bill_all(self):
         # for each member add monthly fee to amount owing
         cursor = self.conn.cursor()
-        cursor.execute('SELECT * FROM Club_Member')
+        cursor.execute('SELECT username, monthly_fee FROM Club_Member')
         num = cursor.fetchone()
 
         for i in num:
-            user, fee, owing, mem_type, first, last, user, height, weight = i
-            # get fee and owing
-            # add
-            new_owing = owing + fee
-            # change
+            user, fee = i
             cursor.execute(
-                'UPDATE Club_Member SET amount_owing = %s WHERE username = %s', [new_owing, user])
+            'INSERT INTO Invoice(username, invoice_date, amount, invoiced_service, paid) VALUES (%s, NOW(), %s, %s, %s)', [user, fee, 'Membership Fee', 'false'])
             self.conn.commit()

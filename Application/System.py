@@ -18,16 +18,20 @@ class System():
     @staticmethod
     def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price):
         cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type,price) VALUES (%s, %s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise, price])
-        conn.commit()
+        try:
+            cursor.execute(
+                'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type, price) VALUES (%s, %s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise, price])
+            conn.commit()
+        except psycopg2.errors.NotNullViolation:
+            print("Invalid time, please try again")
+            return
 
         cursor.execute(
             'SELECT class_id FROM Class WHERE room_num = %s AND class_time = %s', [room_id, start])
 
         exer_class = cursor.fetchone()
 
-        print(f"Class {exer_class[0]} added successfully.")
+        print(f"Class {str(exer_class[0])} added successfully.")
 
     @staticmethod
     def get_free_room(conn, time):
@@ -38,7 +42,7 @@ class System():
         for i in range(num_rooms):
             cursor.execute(
                 'SELECT c.room_num FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [i, time])
-            if not cursor.fetchone():
+            if cursor.fetchone() == []:
                 return i
 
     @staticmethod
@@ -108,13 +112,15 @@ class System():
     def get_member(first, last, conn):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name LIKE %s AND last_name LIKE %s", [first, last])
+            "SELECT username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name ILIKE %s AND last_name ILIKE %s", [first, last])
         return cursor.fetchall()
+    
 
     @staticmethod
-    def print_member(list: tuple):
-        if list is None:
+    def print_member(list):
+        if list == [] or list is None:
             return
+        list = list[0]
         # username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
         print(f'User info for {list[0]}:')
         membership = "Basic" if list[2] == 0 else "Pro"
