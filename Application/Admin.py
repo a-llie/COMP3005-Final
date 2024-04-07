@@ -248,7 +248,7 @@ class Admin(Person):
 
         cursor = self.conn.cursor()
         cursor.execute(
-            'UPDATE Equipment SET maintenance_date = CURRENT_TIMESTAMP WHERE equipment_id = %s', [id])
+            'UPDATE Equipment SET maintenance_date = DATE_TRUNC("second", CURRENT_TIMESTAMP) WHERE equipment_id = %s', [id])
         self.conn.commit()
 
     def __bill_all(self):

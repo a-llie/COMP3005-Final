@@ -42,10 +42,17 @@ class System():
                 return i
 
     @staticmethod
-    def show_all_trainer_schedules(conn):
+    def get_all_trainer_schedules(conn):
         cursor = conn.cursor()
         cursor.execute(
             "SELECT employee_id, schedule_start FROM Schedule ORDER BY schedule_start")
+        return cursor.fetchall()
+
+    @staticmethod
+    def get_all_available_classes(conn, username=None):
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT class_time, capacity, registered, exercise_type, price, trainer_id, class_id FROM Class c WHERE class_time > NOW() AND capacity > registered AND not exists (SELECT * FROM Exercise e WHERE e.username = %s AND e.class_id = c.class_id)", [username])
         return cursor.fetchall()
 
     @staticmethod
@@ -73,6 +80,10 @@ class System():
         weight = System.prompt_for_number("Enter your weight: ")
         weight_goal = System.prompt_for_number("Enter your weight goal: ")
         height = System.prompt_for_number("Enter your height: ")
+        cardio_time = System.prompt_for_number(
+            "How long can you currently do cardio for? (in minutes): ")
+        lifting_weight = System.prompt_for_number(
+            "How much can you currently lift? (in lbs): ")
 
         membership_type = None
         while True:
@@ -86,6 +97,8 @@ class System():
         cursor.execute(
             'INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type, join_date) VALUES (%s, %s, %s, %s, %s, %s, %s,NOW())', [username, first_name, last_name, weight, height, weight_goal, membership_type])
 
+        cursor.execute(
+            'INSERT INTO Health (username, date, weight, cardio_time, lifting_weight, weight_goal) VALUES (%s, NOW(), %s, %s, %s, %s)', [username, weight, cardio_time, lifting_weight, weight_goal])
         print(f"\nUser {username} created successfully.\n")
         conn.commit()
 
@@ -142,7 +155,7 @@ class System():
         cursor = conn.cursor()
 
         cursor.execute(
-            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c AND c.class_time > current_timestamp')
+            'SELECT c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity FROM Class c AND c.class_time > current_timestamp ORDER BY c.class_time ASC')
 
         results = cursor.fetchall()
         if not results:
@@ -157,3 +170,15 @@ class System():
                 f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[3].ljust(20)} | {row[4].ljust(5)} | {row[5].ljust(5)}')
 
         print('-' * 95)
+
+    @staticmethod
+    def create_class_invoice(conn, username, class_id):
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT price FROM Class WHERE class_id = %s', [class_id])
+        price = cursor.fetchone()[0]
+
+        cursor.execute(
+            'INSERT INTO Invoice (username, amount, invoice_date, invoiced_service, paid) VALUES (%s, %s, NOW(), %s, false)', [username, price, class_id])
+
+        print(f"Invoice for class {class_id} created successfully.")

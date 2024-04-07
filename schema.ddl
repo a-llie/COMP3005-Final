@@ -70,12 +70,21 @@ create table Exercise (
     exercise_type varchar(255) not null,
     class_id integer not null,
     username varchar(255) not null,
-    weight integer,
     foreign key (class_id) references Class(class_id),
     foreign key (username) references Club_Member(username),
     primary key (class_id, username)
 );
 
+create table Health (
+    username varchar(255) not null,
+    date timestamp not null,
+    weight float not null,
+    cardio_time float not null,
+    lifting_weight float not null,
+    weight_goal float not null,
+    primary key (username, date),
+    foreign key (username) references Club_Member(username)
+);
 
 
 -- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time

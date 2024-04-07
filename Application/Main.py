@@ -28,7 +28,7 @@ def member_book_session(conn, member: Member):
     cursor = conn.cursor()
     cursor.execute(
         "SELECT c.user_weight FROM Club_Member c WHERE c.username = %s", [member.username])
-    sessions = System.show_all_trainer_schedules(conn)
+    sessions = System.get_all_trainer_schedules(conn)
     member.browse_training_sessions(sessions, conn)
 
     session_choice = input(
@@ -63,12 +63,12 @@ def menu(conn):
                     "SELECT c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [username])
                 first_name, last_name, weight = cursor.fetchone()
                 m = Member(username, first_name, last_name, weight, conn)
-                m.options(conn)
+                m.options()
             case "2":
                 Utils.print_menu_header(options[1])
                 m = Member.sign_in(conn)
                 if m is not None:
-                    m.options(conn)
+                    m.options()
             case "3":
                 Utils.print_menu_header(options[2])
                 result = Trainer.sign_in(conn)

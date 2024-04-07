@@ -94,7 +94,7 @@ select
     floor(random() * 51) + 150 as height,
     --weight goal between 50 and 100 (doesn't have to make sense)
     floor(random() * 51) + 45 as weight_goal
-from generate_series(1, 100) as i
+from generate_series(1, 25) as i
 on CONFLICT (username) DO NOTHING;
 
 -- schedules for trainers
@@ -110,14 +110,14 @@ on conflict (employee_id, schedule_start) do nothing;
 
 
 
--- classes
+-- create classes
 insert into Class(room_num, trainer_id, class_time, capacity, registered, exercise_type, price)
 select
     floor(random() * 8) + 1 as room_num,
     -- Select trainer_id randomly from 1 to 5 (assuming there are 5 trainers)
     floor(random() * 5) + 1 as trainer_id,
-    -- random timestamp from 90 days ago to 90 days ahead 
-    ('2024-01-01 08:00:00'::timestamp + (random() * (NOW() + '90 days' - NOW()))) as class_time,    -- Set capacity to a random number between 10 and 30
+    -- random timestamp in the past and future
+    NOW() - (random() * (NOW()+'90 days' - NOW())) + (random() * '180 days'::interval) as class_time,
 
     floor(random() * 21) + 10 as capacity,
     0 as registered,
@@ -153,7 +153,7 @@ declare
     chosen_class_id integer;
 begin
     -- add 25 random participants to classes
-    for i in 1..25 loop
+    for i in 1..200 loop
         select c.class_id into chosen_class_id
         from Class c
         where c.capacity > c.registered  -- respect capacity constraint
@@ -316,4 +316,20 @@ WHERE class_time <= NOW() AND NOT EXISTS (
     FROM Invoice i
     WHERE i.username = class_participants.username
     AND i.invoice_date = class_participants.class_time
-)
+);
+
+DO $$
+begin 
+    for i in 1..25 loop
+        insert into Health (username, date, weight, cardio_time, lifting_weight, weight_goal)
+        select 
+            username,
+            DATE_TRUNC('second', NOW() - (interval '1 day' * floor(random() * 30))),
+            floor(random() * 100) + 50 as weight,
+            floor(random() * 60) as cardio_time,
+            floor(random() * 100) as lifting_weight,
+            floor(random() * 100) + 50 as weight_goal
+        from (select username from Club_Member order by random() limit 25)
+        on conflict (username, date) do nothing;
+    end loop;
+end $$;
