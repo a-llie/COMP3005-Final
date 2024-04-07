@@ -36,7 +36,7 @@ class Member(Person):
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option\n")
                     # self.options(conn)
 
     def booking_choices(self, conn):

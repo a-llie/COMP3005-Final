@@ -89,7 +89,7 @@ def menu(conn):
                 conn.close()
                 exit()
             case _: 
-                print("Invalid option")
+                print("Invalid option\n")
                 
                 
 

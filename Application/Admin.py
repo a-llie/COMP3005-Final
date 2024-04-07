@@ -22,7 +22,7 @@ class Admin(Person):
     def options(self):
         while True:
             menu_choice = input(
-                f'choose an option: \n 1. View member \n 2. Manage Rooms. \n 3. Manage Equipment \n 4. Manage Upcoming Classes \n 5. Manage Billing \n 6. Sign Out \n\n>>')
+                f'choose an option: \n 1. View member \n 2. View Room Bookings. \n 3. Manage Equipment \n 4. Manage Upcoming Classes \n 5. Manage Billing \n 6. Sign Out \n\n>>')
 
             match menu_choice:
 
@@ -33,6 +33,9 @@ class Admin(Person):
                             user = input("Input username: ")
                             out = System.get_member(user, self.conn)
                             # dispaly
+                            if out == [] or out is None:
+                                print("No match\n")
+                                continue
                             System.print_member(out)
 
                             input("")
@@ -43,17 +46,21 @@ class Admin(Person):
                             last = input("Input last name: ")
                             out = System.get_member(first, last, self.conn)
                             # dispaly
+                            if out == [] or out is None:
+                                print("No match\n")
+                                continue
                             System.print_member(out)
 
                             input("")
                             continue
 
                         case _:
-                            print("Invalid option")
+                            print("Invalid option\n")
 
                 case "2":
                     # add a ability to toggle a romm so that it cant be booked?
                     self.__view_rooms()
+                    input("")
 
                 case "3":
                     choice = input(
@@ -62,16 +69,18 @@ class Admin(Person):
                         case "1":
 
                             self.__get_all_equipment()
+                            input("")
                             continue
 
                         case "2":
                             id = input("Input equipment ID: ")
 
                             self.__maintain_equipment(id)
+                            input("")
                             continue
 
                         case _:
-                            print("Invalid option")
+                            print("Invalid option\n")
 
                 case "4":
                     choice = input(
@@ -80,6 +89,7 @@ class Admin(Person):
                         case "1":
 
                             self.__get_class_schedule()
+                            input("")
                             continue
 
                         case "2":
@@ -104,7 +114,7 @@ class Admin(Person):
                             self.__remove_class(class_id)
 
                         case _:
-                            print("Invalid option")
+                            print("Invalid option\n")
 
                 case "5":
                     self.__bill_all()
@@ -112,7 +122,7 @@ class Admin(Person):
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option\n")
 
     def __get_class_schedule(self):
         cursor = self.conn.cursor()
@@ -129,7 +139,7 @@ class Admin(Person):
         print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Trainer ID".ljust(20)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(10)} | {"Capacity".ljust(10)} ')
         print('-' * 95)
         for row in results:
-            print(row)
+            #print(row)
             print(
                 f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {str(row[2]).ljust(20)} | {str(row[3]).ljust(20)} | {str(row[4]).ljust(10)} | {str(row[5]).ljust(10)}')
 
@@ -187,7 +197,7 @@ class Admin(Person):
         # header
         print("Rooms in Building 1:")  # CURRENTLY HARD CODDED
         print(f'     {"Room Number".ljust(20)} | {"Class ID".ljust(20)} | {"Class Time".ljust(20)} | {"Trainer".ljust(20)} | {"Exercise Type".ljust(20)}  ')
-        print('-' * 95)
+        print('-' * 115)
 
         # print body
         for i in range(num_rooms):
@@ -199,11 +209,12 @@ class Admin(Person):
                 print(
                     f'    {(" Room " + str(i)).ljust(20)} | {"-" * 20} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
                 continue
-            results = results[0]
-            print(
-                f'    {(" Room " + str(i)).ljust(20)} | {str(results[0]).ljust(20)} | {str(results[1]).ljust(20)} | {str(results[2]).ljust(20)} | {results[3].ljust(20)}')
+            
+            for thing in results:
+                print(
+                    f'    {(" Room " + str(i)).ljust(20)} | {str(thing[0]).ljust(20)} | {str(thing[1]).ljust(20)} | {str(thing[2]).ljust(20)} | {thing[3].ljust(20)}')
 
-        print('-' * 95)
+        print('-' * 115)
 
     def __get_all_equipment(self):
         cursor = self.conn.cursor()

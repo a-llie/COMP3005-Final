@@ -1,0 +1,8 @@
+NOT WHAT IS FULLY TESTED
+member:
+
+
+trainer:
+
+
+admin:

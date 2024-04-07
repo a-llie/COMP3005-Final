@@ -100,7 +100,8 @@ class System():
 
     @staticmethod
     def print_member(list: tuple):
-        if list is None:
+        #print(list)
+        if list == [] or list is None:
             return
         # username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
         print(f'User info for {list[0]}:')

@@ -76,7 +76,7 @@ class Trainer(Person):
                                 input("OK [Press Enter]")
 
                             case _:
-                                print("Invalid option")
+                                print("Invalid option\n")
 
                 case "3":
                     # see whats booked for you (in the class table )
@@ -86,7 +86,7 @@ class Trainer(Person):
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option\n")
 
     def __add_availability(self, start, end):  # psudo code
         # breack it into one our blocks
@@ -161,7 +161,7 @@ class Trainer(Person):
                 case "4":
                     break
                 case _:
-                    print("Invalid option")
+                    print("Invalid option\n")
                     
 
     def __see_upcoming_classes(self):
