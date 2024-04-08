@@ -86,7 +86,7 @@ class System():
 
         weight = Utils.prompt_for_number("Enter your weight: ")
         weight_goal = Utils.prompt_for_number("Enter your weight goal: ")
-        height = Utils.prompt_for_number("Enter your height: ")
+        #height = Utils.prompt_for_number("Enter your height: ")
         cardio_time = Utils.prompt_for_number(
             "How long can you currently do cardio for? (in minutes): ")
         lifting_weight = Utils.prompt_for_number(
@@ -102,7 +102,7 @@ class System():
             break
         cursor = conn.cursor()
         cursor.execute(
-            'INSERT INTO Club_Member (username, first_name, last_name, user_weight, height, weight_goal, membership_type, join_date) VALUES (%s, %s, %s, %s, %s, %s, %s,NOW())', [username, first_name, last_name, weight, height, weight_goal, membership_type])
+            'INSERT INTO Club_Member (username, first_name, last_name, membership_type, join_date) VALUES (%s, %s, %s, %s, NOW())', [username, first_name, last_name, membership_type])
 
         cursor.execute(
             'INSERT INTO Health (username, date, weight, cardio_time, lifting_weight, weight_goal) VALUES (%s, NOW(), %s, %s, %s, %s)', [username, weight, cardio_time, lifting_weight, weight_goal])
@@ -116,7 +116,7 @@ class System():
     def find_members(username, conn):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, monthly_fee, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE username LIKE %s", ['%' + username + '%'])
+            "SELECT username, monthly_fee, membership_type, first_name, last_name FROM Club_Member  WHERE username LIKE %s", ['%' + username + '%'])
         return cursor.fetchall()
 
     @staticmethod
@@ -125,22 +125,22 @@ class System():
         cursor = conn.cursor()
         if first == "" and last == "":
             cursor.execute(
-                "SELECT username, monthly_fee, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member")
+                "SELECT username, monthly_fee, membership_type, first_name, last_name FROM Club_Member")
             return cursor.fetchall()
         if first == "":
             cursor.execute(
-                "SELECT username, monthly_fee, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE last_name ILIKE %s", [last])
+                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE last_name ILIKE %s", [last])
             return cursor.fetchall()
         if last == "":
             cursor.execute(
-                "SELECT username, monthly_fee, membership_type, first_name, last_name, user_weight, height, weight_goal  FROM Club_Member  WHERE first_name ILIKE %s", [first])
+                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE first_name ILIKE %s", [first])
             return cursor.fetchall()
 
     @staticmethod
     def print_member(user):
         if user == [] or user is None:
             return
-        # username, monthly_free, membership_type, first_name, last_name, user_weight, height, weight_goal
+        # username, monthly_free, membership_type, first_name, last_name,
         print(f'User info for {user[0]}:')
         membership = "Basic" if user[2] == 0 else "Pro"
 
@@ -148,7 +148,9 @@ class System():
         user[2] = membership
 
         Utils.print_table(
-            [("Username", max(len(user[0]), len("Username"))), ("Monthly Fee", 15), ("Membership Type", 15), ("First Name", max(len(user[3]), len("First Name"))), ("Last Name", max(len(user[4]), len("Last Name"))), ("Weight", 10), ("Height", 10), ("Weight Goal", 10)], [user], [max(len(user[0]), len("Username")), 15, 15, max(len(user[3]), len("First Name")), max(len(user[4]), len("Last Name")), 10, 10, 10], False)
+            [("Username", max(len(user[0]), len("Username"))), ("Monthly Fee", 15), ("Membership Type", 15), ("First Name", max(len(user[3]), len("First Name"))), ("Last Name", max(len(user[4]), len("Last Name")))]
+            , [user],
+              [max(len(user[0]), len("Username")), 15, 15, max(len(user[3]), len("First Name")), max(len(user[4]), len("Last Name"))], False)
 
     @staticmethod
     def get_trainer_schedule(conn, trainer_id):

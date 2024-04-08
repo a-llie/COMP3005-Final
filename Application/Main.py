@@ -58,11 +58,8 @@ def menu(conn):
             case "1":
                 Utils.print_menu_header(options[0])
                 username = System.create_new_user(conn)
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [username])
-                first_name, last_name, weight = cursor.fetchone()
-                m = Member(username, first_name, last_name, weight, conn)
+               
+                m = Member.sign_in(conn, username)
                 m.options()
             case "2":
                 Utils.print_menu_header(options[1])

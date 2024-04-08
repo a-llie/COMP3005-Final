@@ -107,18 +107,25 @@ class Member(Person):
         self.book_class(chosen_class)
 
     @staticmethod
-    def sign_in(conn):
-        user = input("Enter your username: ")
+    def sign_in(conn, user = None):
+        if user is None:
+            user = input("Enter your username: ")
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT c.username, c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [user])
+            "SELECT c.username, c.first_name, c.last_name FROM Club_Member c WHERE c.username = %s", [user])
         found = cursor.fetchone()
         if found is None:
             print("User not found.\n")
             return
-        else:
-            user, first_name, last_name, weight = found
-            return Member(user, first_name, last_name, weight, conn)
+        
+        #most recent weight
+        cursor.execute(
+            "SELECT weight FROM health  WHERE username = %s Order By date DESC", [user])
+        weight = cursor.fetchone()[0]
+
+        
+        user, first_name, last_name = found
+        return Member(user, first_name, last_name, weight, conn)
 
     def add_exercise(startTime, duration, exercise_type: str, weight):
         # add a exercise to the database under the current user

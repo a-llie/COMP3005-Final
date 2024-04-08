@@ -11,10 +11,7 @@ create table Club_Member (
     monthly_fee float not null,
     membership_type varchar(255) not null,
     first_name varchar(255) not null,
-    last_name varchar(255) not null,
-    user_weight float not null,
-    height float not null,
-    weight_goal float not null
+    last_name varchar(255) not null
 );
 
 create table Building (
@@ -61,7 +58,7 @@ create table Invoice (
     amount float not null,
     invoiced_service integer,
     paid boolean not null,
-    foreign key (username) references Club_Member(username)
+    foreign key (username) references Club_Member(username),
     foreign key (invoiced_service) references Class(class_id)
 );
 

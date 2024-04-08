@@ -50,7 +50,7 @@ insert into Employee (first_name, last_name, is_trainer) values
 
 
 --initialize club members
-insert into Club_Member (username, join_date, membership_type, first_name, last_name, user_weight, height, weight_goal) 
+insert into Club_Member (username, join_date, membership_type, first_name, last_name) 
 select
     -- random username
     'user' || floor(random() * 1000) as username,
@@ -87,13 +87,8 @@ select
         when 8 then 'Anderson'
         when 9 then 'Thomas'
         else 'Wilson'
-    end as last_name,
-    -- weight between 50 and 100
-    floor(random() * 51) + 50 as user_weight,
-    -- height between 150 and 200
-    floor(random() * 51) + 150 as height,
-    --weight goal between 50 and 100 (doesn't have to make sense)
-    floor(random() * 51) + 45 as weight_goal
+    end as last_name
+    
 from generate_series(1, 25) as i
 on CONFLICT (username) DO NOTHING;
 
@@ -248,9 +243,9 @@ begin
 end $$;
 
 
-INSERT INTO Club_Member (username, join_date,first_name, last_name, user_weight, height, weight_goal, membership_type)
+INSERT INTO Club_Member (username, join_date,first_name, last_name, membership_type)
 VALUES
- ('testuser', NOW(),  'Test', 'User', 123, 123, 123, 'Basic');
+ ('testuser', NOW(),  'Test', 'User', 'Basic');
 
 
 
