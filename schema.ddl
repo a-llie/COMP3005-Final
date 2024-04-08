@@ -62,6 +62,7 @@ create table Invoice (
     invoiced_service integer,
     paid boolean not null,
     foreign key (username) references Club_Member(username)
+    foreign key (invoiced_service) references Class(class_id)
 );
 
 create table Exercise (
