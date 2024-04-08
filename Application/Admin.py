@@ -3,6 +3,7 @@
 from Person import Person
 from System import System
 from gym_utils import Utils
+from datetime import datetime
 
 
 class Admin(Person):
@@ -13,7 +14,7 @@ class Admin(Person):
 
     @staticmethod
     def sign_in(conn):
-        id = input("Enter your id: ")
+        id = Utils.prompt_for_number("Enter your employee ID: ")
         print("\n")
         cursor = conn.cursor()
         cursor.execute(
@@ -23,82 +24,82 @@ class Admin(Person):
 
     def options(self):
         while True:
+            Utils.print_menu_header("Admin Menu")
+            choices = [
+                "View member",
+                "View Upcoming Room Usage",
+                "Manage Equipment",
+                "Manage Upcoming Classes",
+                "Manage Billing",
+                "Sign Out"
+            ]
+
+            menu_options = ""
+            for i, option in enumerate(choices):
+                menu_options += f"{i+1}. {option}\n"
+
             menu_choice = input(
-                f'choose an option: \n 1. View member \n 2. Manage Rooms. \n 3. Manage Equipment \n 4. Manage Upcoming Classes \n 5. Manage Billing \n 6. Sign Out \n\n>>')
+                f'{self.first_name}, choose an option: \n{menu_options} \n\n>>')
 
             match menu_choice:
 
                 case "1":
+                    Utils.print_menu_header("View Member")
                     choice = input(
                         "Would you like to search by: \n 1. username \n 2. name \n")
                     match choice:
                         case "1":
-                            user = input("Input username: ")
-                            out = System.get_member(user, self.conn)
-                            # dispaly
-                            print(out)
-
-                            if out == [] or out is None:
-                                print("Not Found\n")
-                                continue
-                            System.print_member(out)
-
-                            input("")
+                            Utils.print_menu_header("Search by Username")
+                            self.search_for_user(True)
                             continue
-
                         case "2":
-                            first = input("Input first name: ")
-                            last = input("Input last name: ")
-                            out = System.get_member(first, last, self.conn)
-                            # dispaly
-                            if out == [] or out is None:
-                                print("Not Found\n")
-                                continue
-                            System.print_member(out)
-
-                            input("")
+                            Utils.print_menu_header("Search by name")
+                            self.search_for_user(False)
                             continue
-
                         case _:
-                            print("Invalid option")
-                            print("")
+                            print("Invalid option.\n")
+                            Utils.OK()
 
                 case "2":
                     # add a ability to toggle a romm so that it cant be booked?
+                    Utils.print_menu_header("Future Room Usage")
                     self.__view_rooms()
-                    input("")
+                    Utils.OK()
 
                 case "3":
+                    Utils.print_menu_header("Manage Equipment")
                     choice = input(
-                        "Would you like to: \n 1. View Equipment \n 2. Service Equipment\n")
+                        "Would you like to: \n 1. View Equipment \n 2. Service Equipment.\n>>")
                     match choice:
                         case "1":
-
+                            Utils.print_menu_header("View Equipment")
                             self.__get_all_equipment()
-                            input("")
+                            Utils.OK()
                             continue
 
                         case "2":
-                            id = input("Input equipment ID: ")
-
-                            self.__maintain_equipment(id)
+                            Utils.print_menu_header("Service Equipment")
+                            self.__maintain_equipment()
+                            Utils.OK()
                             continue
 
                         case _:
-                            print("Invalid option")
+                            print("Invalid option.")
+                            Utils.OK()
 
                 case "4":
+                    Utils.print_menu_header("Manage Upcoming Classes")
                     choice = input(
-                        "Would you like to: \n 1. View Upcoming Classes \n 2. Add a Class \n 3. Remove a Class(by time and trainer) \n 4. Remove a Class(by class id)\n")
+                        "Would you like to: \n 1. View Upcoming Classes \n 2. Add a Class \n 3. Remove a Class\n>>")
                     match choice:
                         case "1":
-
+                            Utils.print_menu_header("View Upcoming Classes")
                             self.__get_class_schedule()
-                            input("")
+                            Utils.OK()
                             continue
 
                         case "2":
-
+                            Utils.print_menu_header("Add a Class")
                             while True:
                                 trainer = Utils.prompt_for_number(
                                     "ID of trainer who will teach the class: ")
@@ -108,42 +109,85 @@ class Admin(Person):
                                 result = cursor.fetchone()
                                 if not result:
                                     print("Trainer not found.")
+                                    Utils.OK()
                                     continue
                                 break
+
                             name = result[1]
-                            time = input(
-                                "When will the class be (YYYY-MM-DD HH:MM):")
+
+                            cursor = self.conn.cursor()
+                            cursor.execute(
+                                'SELECT schedule_start FROM Schedule s WHERE s.employee_id = %s AND s.schedule_start > current_timestamp AND (SELECT  COUNT(*) FROM Class c WHERE c.class_time = s.schedule_start) < %s ORDER BY schedule_start ', [result[0], 8])
+
+                            schedules = cursor.fetchall()
+
+                            if not schedules:
+                                print("Trainer has no availability.")
+                                Utils.OK()
+                                continue
+
+                            print("Trainer's availability:")
+
+                            Utils.print_table(
+                                [("#", 0), ("Time", 20)], schedules, [20], True)
+
+                            time = -1
+                            while time < 1 or time > len(schedules):
+                                time = Utils.prompt_for_number(
+                                    "Select a timeslot from above for the class.>>")
+
                             exercise = input(
-                                f"What will {name} be teaching: ")
+                                f"What will {name} be teaching? >> ")
 
                             cap = Utils.prompt_for_number(
-                                "What is the capacity: ")
+                                "What is the class capacity? >> ")
                             price = Utils.prompt_for_number(
-                                "What is the price: ")
+                                "What is the price? >> ")
 
+                            timeslot = schedules[time-1][0]
                             self.__add_class(
-                                trainer, time, exercise, price, cap)
+                                trainer, timeslot, exercise, price, cap)
                             continue
-
                         case "3":
-                            time = input("When dose the class start: ")
-                            trainer = input("Who is teaching the class: ")
-                            self.__remove_class(time, trainer)
+                            classes = System.get_all_available_classes(
+                                self.conn)
 
-                        case "4":
-                            class_id = input("What is the class ID: ")
-                            self.__remove_class(class_id)
+                            if not classes:
+                                print("No classes available.")
+                                Utils.OK()
+                                continue
+
+                            self.browse_classes(classes)
+
+                            class_id = -1
+                            while class_id < 1 or class_id > len(classes):
+                                class_id = Utils.prompt_for_number(
+                                    "Choose a class by its listed number from above to remove. >> ")
+                                if (class_id < 1 or class_id > len(classes)):
+                                    print("Invalid choice.")
+                                    continue
+
+                            self.__remove_class(classes[class_id - 1][-1])
 
                         case _:
-                            print("Invalid option")
+                            print("Invalid option.\n")
 
                 case "5":
-                    self.__bill_all()
+                    Utils.print_menu_header("Manage Billing")
+                    choice = input(
+                        "1. See outstanding bills.\n2. Bill all members for this month's membership.\n\n>>")
+                    match choice:
+                        case "1":
+                            Utils.print_menu_header("Outstanding Bills")
+                            self.__see_outstanding_bills()
+                        case "2":
+                            self.__bill_all()
+                    Utils.OK()
                 case "6":
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option.\n")
 
     def __get_class_schedule(self):
         cursor = self.conn.cursor()
@@ -153,58 +197,58 @@ class Admin(Person):
 
         results = cursor.fetchall()
         if not results:
-            print("Nothing Scheduled.")
+            print("Nothing Scheduled.\n")
             return
 
-        print("Upcoming classes:")
-        print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Trainer ID".ljust(20)} | {"Exercise Type".ljust(20)} | {"Registered".ljust(10)} | {"Capacity".ljust(10)} ')
-        print('-' * 95)
-        for row in results:
-            #print(row)
-            print(
-                f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {str(row[2]).ljust(20)} | {str(row[3]).ljust(20)} | {str(row[4]).ljust(10)} | {str(row[5]).ljust(10)}')
-
-        print('-' * 95)
+        Utils.print_table(
+            [("Class Time", 20), ("Room Number", 12), ("Trainer ID", 15), ("Exercise Type", 20), ("Registered", 10), ("Capacity", 10)], results, [20, 12, 15, 20, 10, 10])
 
     def __add_class(self, trainer_id, start, exercise, price, capacity=5):
         cursor = self.conn.cursor()
 
+        # pick a free room (in system.py)
+        room_id = System.get_free_room(self.conn, start)
+
+        if room_id is None:
+            print("No rooms available at that time.")
+            return
+
+        # creat class
+        System.add_class(self.conn, room_id, start, trainer_id,
+                         capacity, 0, exercise, price)
+
         # remove that block from the free scedual of the trainer
         cursor.execute('DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s', [
                        trainer_id, start])
-        self.conn.commit()
 
-        # pick a free room (in system.py)
-        room_id = System.get_free_room(self.conn, start)
-        # creat class
-        System.add_class(self.conn, room_id, start, trainer_id, capacity, 0, exercise, price)
-
-    def __remove_class(self, start, id):
-        cursor = self.conn.cursor()
-
-        # romovce all exercises that have the class as a foren key
-        # get the class id
-        cursor.execute(
-            'SELECT class_id FROM Class WHERE class_time = %s AND trainer_id = %s', [start, id])
-        class_id = cursor.fetchone()[0]
-
-        cursor.execute('DELETE FROM Exercise WHERE class_id = %s', [class_id])
-        self.conn.commit()
-
-        # remove the class
-        cursor.execute(
-            'DELETE FROM Class WHERE class_time = %s AND trainer_id = %s', [start, id])
         self.conn.commit()
 
     def __remove_class(self, class_id):
         cursor = self.conn.cursor()
 
-        # romovce all exercises that have the class as a foren key
+        # romovce all exercises that have the class as a foreign key
         cursor.execute('DELETE FROM Exercise WHERE class_id = %s', [class_id])
-        self.conn.commit()
+
+        # delete all related invoices
+        cursor.execute(
+            'DELETE FROM Invoice WHERE invoiced_service = %s', [class_id])
 
         # remove the class
+        cursor.execute(
+            'SELECT trainer_id, class_time FROM Class WHERE class_id = %s', [class_id])
+
+        results = cursor.fetchone()
+        if not results:
+            print("Class not found.")
+            return
+
         cursor.execute('DELETE FROM Class WHERE class_id = %s', [class_id])
+
+        # add the time back to the trainers schedule
+        cursor.execute(
+            'INSERT INTO Schedule (employee_id, schedule_start) VALUES (%s, %s)', [results[0], results[1]])
+
+        print("Class removed.\n")
         self.conn.commit()
 
     def __view_rooms(self):
@@ -214,27 +258,24 @@ class Admin(Person):
         cursor.execute('SELECT num_rooms FROM Building')
         num_rooms = cursor.fetchone()[0]
 
-        # header
-        print("Rooms in Building 1:")  # CURRENTLY HARD CODDED
-        print(f'     {"Room Number".ljust(20)} | {"Class ID".ljust(20)} | {"Class Time".ljust(20)} | {"Trainer".ljust(20)} | {"Exercise Type".ljust(20)}  ')
-        print('-' * 115)
+        results = []
 
-        # print body
-        for i in range(num_rooms):
+        for i in range(1, num_rooms+1):
             cursor.execute(
-                'SELECT class_id, class_time,  trainer_id, exercise_type   FROM Class WHERE room_num = %s AND class_time > current_timestamp', [i])
-            results = cursor.fetchall()
+                'SELECT class_id, class_time,  trainer_id, exercise_type FROM Class WHERE room_num = %s AND class_time > current_timestamp ORDER BY class_time', [i])
+            result = cursor.fetchall()
+            for row in result:
+                trainer = Utils.trainer_id_to_name(row[2], self.conn)
+                results.append(
+                    (f'Room {i}', row[0], row[1], trainer[0] + " " + trainer[1], row[3]))
 
-            if len(results) == 0:
-                print(
-                    f'    {(" Room " + str(i)).ljust(20)} | {"-" * 20} | {"-" * 20} | {"-" * 20} | {"-" * 20} ')
-                continue
+        if len(results) == 0:
+            print("No classes scheduled.")
+            Utils.OK()
+            return
 
-            for thing in results:
-                print(
-                    f'    {(" Room " + str(i)).ljust(20)} | {str(thing[0]).ljust(20)} | {str(thing[1]).ljust(20)} | {str(thing[2]).ljust(20)} | {thing[3].ljust(20)}')
-
-        print('-' * 115)
+        Utils.print_table(
+            [("Room Number", 15), ("Class ID", 10), ("Class Time", 20), ("Trainer", 30), ("Exercise Type", 15)], results, [15, 10, 20, 30, 15])
 
     def __get_all_equipment(self):
         cursor = self.conn.cursor()
@@ -244,34 +285,114 @@ class Admin(Person):
 
         results = cursor.fetchall()
         if not results:
-            print("No equipment.")
+            print("No equipment found.")
+            Utils.OK()
             return
 
-        print("Equipment:")
-        print(f'    {"Equipment ID".ljust(20)} | {"Name".ljust(20)} | {"Room Number".ljust(20)} | {"Maintenance Date".ljust(20)} ')
-        print('-' * 95)
-        for row in results:
-            print(
-                f'    {str(row[0]).ljust(20)} | {str(row[1]).ljust(20)} | {str(row[2]).ljust(20)} | {str(row[3]).ljust(20)} ')
+        Utils.print_table(
+            [("Equipment ID", 20), ("Type", 20), ("Room Number", 20), ("Maintenance Date", 20)], results, [20, 20, 20, 20])
 
-        print('-' * 95)
-
-    def __maintain_equipment(self, id):
-        # simulates maintaining the equipment
-
+    def __get_equipment_maintenace_needed(self):
         cursor = self.conn.cursor()
+
         cursor.execute(
-            'UPDATE Equipment SET maintenance_date = CURRENT_TIMESTAMP WHERE equipment_id = %s', [id])
-        self.conn.commit()
+            'SELECT equipment_id, name, room_num, maintenance_date FROM Equipment WHERE maintenance_date < current_timestamp -  INTERVAL %s ORDER BY maintenance_date', ('1 MONTH',))
+
+        results = cursor.fetchall()
+        if not results:
+            return None
+
+        Utils.print_table(
+            [("Equipment ID", 20), ("Name", 20), ("Room Number", 20), ("Maintenance Date", 20)], results, [20, 20, 20, 20])
+
+        return results
+
+    def __maintain_equipment(self):
+        # simulates maintaining the equipment
+        equipment = self.__get_equipment_maintenace_needed()
+        if not equipment:
+            print("All maintenace up to date.")
+            return
+
+        choice = input(
+            "1. Perform maintenance on all equipment listed above. \n2. Perform maintenance on a specific piece of equipment. \n3. Cancel. \n\n>>")
+        match choice:
+            case "1":
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    'UPDATE Equipment SET maintenance_date = DATE_TRUNC(%s, current_timestamp) WHERE maintenance_date < current_timestamp -  INTERVAL %s', ['day', '1 MONTH'])
+                self.conn.commit()
+                print("All equipment has been serviced.\n")
+                return
+            case "2":
+                id = Utils.prompt_for_number("Input equipment ID: ")
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    'UPDATE Equipment SET maintenance_date = DATE_TRUNC(%s, current_timestamp) WHERE equipment_id = %s', ['day', id])
+
+                self.conn.commit()
+
+                cursor.execute(
+                    'SELECT equipment_id, name, room_num, maintenance_date FROM Equipment WHERE equipment_id = %s', [id])
+
+                result = cursor.fetchone()
+
+                if not result:
+                    print("Equipment not found.\n")
+                    return
+
+                print(f'Equipment {result[1]} has been serviced.\n')
+
+                Utils.print_table(
+                    [("Equipment ID", 20), ("Name", 20), ("Room Number", 20), ("Maintenance Date", 20)], [result], [20, 20, 20, 20])
+
+                return
+            case "3":
+                return
+            case _:
+                print("Invalid option.\n")
 
     def __bill_all(self):
         # for each member add monthly fee to amount owing
         cursor = self.conn.cursor()
-        cursor.execute('SELECT c.username, c.monthly_fee FROM Club_Member c ')
-        num = cursor.fetchone()
-        print(num)
-        for i in num:
-            user, fee = i
-            cursor.execute(
-            'INSERT INTO Invoice(username, invoice_date, amount, invoiced_service, paid) VALUES (%s, NOW(), %s, %s, %s)', [user, fee, 'Membership Fee', 'false'])
-            self.conn.commit()
+        cursor.execute("""INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
+                    SELECT 
+                        DATE_TRUNC('month', CURRENT_DATE) AS invoice_date,
+                        c.username,
+                        c.monthly_fee,
+                        null AS invoiced_service,
+                        false AS paid
+                    FROM 
+                        Club_Member c
+                    WHERE not exists
+                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)""")
+
+        self.conn.commit()
+        print(
+            f"All members have been billed for {Utils.number_to_month(datetime.now().month)} {datetime.now().year}.\n")
+
+    def __see_outstanding_bills(self):
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            'SELECT i.username, i.amount, i.invoice_date, i.invoiced_service FROM Invoice i WHERE paid = false AND ((SELECT class_time FROM Class c WHERE c.class_id = i.invoiced_service ) < NOW() OR i.invoiced_service is null) ORDER BY invoice_date')
+
+        results = cursor.fetchall()
+        if not results:
+            print("No outstanding bills.\n")
+            return
+
+        final_results = []
+
+        for row in results:
+            if row[3] is None:
+                final_results.append(
+                    [row[0], row[1], row[2], 'Membership Fee'])
+            else:
+                cursor.execute(
+                    'SELECT exercise_type FROM Class WHERE class_id = %s', [row[3]])
+                exercise = cursor.fetchone()[0]
+                final_results.append([row[0], row[1], row[2], exercise])
+
+        Utils.print_table(
+            [("Username", 20), ("Amount", 20), ("Invoice Date", 20), ("Invoiced Service", 20)], final_results, [20, 20, 20, 20])

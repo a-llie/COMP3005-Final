@@ -16,7 +16,7 @@ class Trainer(Person):
 
     @staticmethod
     def sign_in(conn):
-        id = input("Enter your id: ")
+        id = Utils.prompt_for_number("Enter your employee ID: ")
         cursor = conn.cursor()
         cursor.execute(
             "SELECT c.employee_id, c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = TRUE", [id])
@@ -25,6 +25,7 @@ class Trainer(Person):
 
     def options(self):
         while True:
+            Utils.print_menu_header("Trainer Menu")
             menu_choice = input(
                 f'\n{self.first_name}, choose an option: \n 1. Schedule management \n 2. View member \n 3. See upcoming classes. \n 4. Sign Out \n\n>>')
 
@@ -40,7 +41,7 @@ class Trainer(Person):
                         match choice:
                             case "1":
                                 user = input("Input username: ")
-                                out = System.get_member(user, self.conn)
+                                out = System.find_members(user, self.conn)
 
                                 if out is None:
                                     print("User not found")
@@ -70,14 +71,15 @@ class Trainer(Person):
                             case "2":
                                 first = input("Input first name: ")
                                 last = input("Input last name: ")
-                                out = System.get_member(first, last, self.conn)
+                                out = System.find_members(
+                                    first, last, self.conn)
                                 # display
                                 System.print_member(out)
 
                                 input("OK [Press Enter]")
 
                             case _:
-                                print("Invalid option")
+                                print("Invalid option.\n")
 
                 case "3":
                     # see whats booked for you (in the class table )
@@ -87,7 +89,7 @@ class Trainer(Person):
                     print("Signing out...\n\n")
                     return
                 case _:
-                    print("Invalid option")
+                    print("Invalid option.\n")
 
     def __add_availability(self, start, end):  # psudo code
         # breack it into one our blocks
@@ -164,7 +166,7 @@ class Trainer(Person):
                 case "4":
                     break
                 case _:
-                    print("Invalid option")
+                    print("Invalid option.\n")
 
     def __see_upcoming_classes(self):
         cursor = self.conn.cursor()

@@ -11,10 +11,7 @@ create table Club_Member (
     monthly_fee float not null,
     membership_type varchar(255) not null,
     first_name varchar(255) not null,
-    last_name varchar(255) not null,
-    user_weight float not null,
-    height float not null,
-    weight_goal float not null
+    last_name varchar(255) not null
 );
 
 create table Building (
@@ -59,9 +56,10 @@ create table Invoice (
     invoice_date date not null,
     username varchar(255) not null,
     amount float not null,
-    invoiced_service varchar(255) not null,
+    invoiced_service integer,
     paid boolean not null,
-    foreign key (username) references Club_Member(username)
+    foreign key (username) references Club_Member(username),
+    foreign key (invoiced_service) references Class(class_id)
 );
 
 create table Exercise (
@@ -70,12 +68,21 @@ create table Exercise (
     exercise_type varchar(255) not null,
     class_id integer not null,
     username varchar(255) not null,
-    weight integer,
     foreign key (class_id) references Class(class_id),
     foreign key (username) references Club_Member(username),
     primary key (class_id, username)
 );
 
+create table Health (
+    username varchar(255) not null,
+    date timestamp not null,
+    weight float not null,
+    cardio_time float not null,
+    lifting_weight float not null,
+    weight_goal float not null,
+    primary key (username, date),
+    foreign key (username) references Club_Member(username)
+);
 
 
 -- this trigger ensures that schedules are always on the hour, and end time is exactly one hour after start time

@@ -20,8 +20,8 @@ select
     end as name,
     --generate a random room number between 1 and 8
     floor(random() * 8) + 1 as room_num,
-    --generate a random maintenance date between today and 90 days ahead
-    NOW() + (random() * (NOW()+'90 days' - NOW())) as maintenance_date
+    --generate a random maintenance date between today and 35 days ago
+    NOW() - (random() * (NOW()+'35 days' - NOW())) as maintenance_date
 from generate_series(1, 100) as i;
 
 
@@ -50,7 +50,7 @@ insert into Employee (first_name, last_name, is_trainer) values
 
 
 --initialize club members
-insert into Club_Member (username, join_date, membership_type, first_name, last_name, user_weight, height, weight_goal) 
+insert into Club_Member (username, join_date, membership_type, first_name, last_name) 
 select
     -- random username
     'user' || floor(random() * 1000) as username,
@@ -87,14 +87,9 @@ select
         when 8 then 'Anderson'
         when 9 then 'Thomas'
         else 'Wilson'
-    end as last_name,
-    -- weight between 50 and 100
-    floor(random() * 51) + 50 as user_weight,
-    -- height between 150 and 200
-    floor(random() * 51) + 150 as height,
-    --weight goal between 50 and 100 (doesn't have to make sense)
-    floor(random() * 51) + 45 as weight_goal
-from generate_series(1, 100) as i
+    end as last_name
+    
+from generate_series(1, 25) as i
 on CONFLICT (username) DO NOTHING;
 
 -- schedules for trainers
@@ -110,14 +105,14 @@ on conflict (employee_id, schedule_start) do nothing;
 
 
 
--- classes
+-- create classes
 insert into Class(room_num, trainer_id, class_time, capacity, registered, exercise_type, price)
 select
     floor(random() * 8) + 1 as room_num,
     -- Select trainer_id randomly from 1 to 5 (assuming there are 5 trainers)
     floor(random() * 5) + 1 as trainer_id,
-    -- random timestamp from 90 days ago to 90 days ahead 
-    ('2024-01-01 08:00:00'::timestamp + (random() * (NOW() + '90 days' - NOW()))) as class_time,    -- Set capacity to a random number between 10 and 30
+    -- random timestamp in the past and future
+    NOW() - (random() * (NOW()+'90 days' - NOW())) + (random() * '180 days'::interval) as class_time,
 
     floor(random() * 21) + 10 as capacity,
     0 as registered,
@@ -138,7 +133,7 @@ select
         when 1 then 50.00
         ELSE 75.00
     end as price
-from generate_series(1, 100) as i
+from generate_series(1, 300) as i
 where not exists -- no overlapping room_num, trainer_id, and class_time
 (select * from Class c where c.trainer_id = trainer_id and c.class_time = class_time)
 on conflict (room_num, class_time) do nothing;
@@ -153,7 +148,7 @@ declare
     chosen_class_id integer;
 begin
     -- add 25 random participants to classes
-    for i in 1..25 loop
+    for i in 1..200 loop
         select c.class_id into chosen_class_id
         from Class c
         where c.capacity > c.registered  -- respect capacity constraint
@@ -248,21 +243,88 @@ begin
 end $$;
 
 
-INSERT INTO Club_Member (username, join_date,first_name, last_name, user_weight, height, weight_goal, membership_type)
+INSERT INTO Club_Member (username, join_date,first_name, last_name, membership_type)
 VALUES
- ('testuser', NOW(),  'Test', 'User', 123, 123, 123, 'Basic');
+ ('testuser', NOW(),  'Test', 'User', 'Basic');
 
 
 
-INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
+INSERT INTO Invoice (invoice_date, username, amount, paid)
 SELECT 
-    NOW() - (random() * (NOW()+'90 days' - NOW())) as invoice_date,
+-- random 1st of a month as date between 1 and 3 months ago
+
+    date_trunc('month', NOW()) - (interval '1 month' * floor(random() * 3)) as invoice_date,
     club_member.username,
     club_member.monthly_fee as amount,
-    'Membership Fee' as invoiced_service,
     -- randomly paid or not paid, unless the user is 'testuser' who is always unpaid
     CASE 
         WHEN club_member.username = 'testuser' THEN false
         ELSE random() < 0.67
     END as paid
-FROM Club_Member
+FROM Club_Member;
+
+
+-- insert unpaid invoices for classes that have not happened yet 
+INSERT INTO Invoice (invoice_date, invoiced_service, username, amount, paid)
+SELECT 
+    class_time as invoice_date,
+    class_id as invoiced_service,
+    username,
+    price as amount,
+    false as paid
+FROM (
+    SELECT 
+        c.class_time,
+        c.price,
+        e.class_id,
+        e.username
+    FROM Class c
+    JOIN Exercise e ON c.class_id = e.class_id
+) as class_participants
+WHERE class_time > NOW() AND NOT EXISTS (
+    SELECT * 
+    FROM Invoice i
+    WHERE i.username = class_participants.username
+    AND i.invoice_date = class_participants.class_time
+);
+
+
+-- insert unpaid/paid invoices for classes that have already happened
+INSERT INTO Invoice (invoice_date, invoiced_service, username, amount, paid)
+SELECT 
+    class_time as invoice_date,
+    class_id as invoiced_service,
+    username,
+    price as amount,
+    random() < 0.67 as paid
+FROM (
+    SELECT 
+        c.class_time,
+        c.price,
+        e.class_id,
+        e.username
+    FROM Class c
+    JOIN Exercise e ON c.class_id = e.class_id
+) as class_participants
+WHERE class_time <= NOW() AND NOT EXISTS (
+    SELECT * 
+    FROM Invoice i
+    WHERE i.username = class_participants.username
+    AND i.invoice_date = class_participants.class_time
+);
+
+DO $$
+begin 
+    for i in 1..25 loop
+        insert into Health (username, date, weight, cardio_time, lifting_weight, weight_goal)
+        select 
+            username,
+            DATE_TRUNC('second', NOW() - (interval '1 day' * floor(random() * 30))),
+            floor(random() * 100) + 50 as weight,
+            floor(random() * 60) as cardio_time,
+            floor(random() * 100) as lifting_weight,
+            floor(random() * 100) + 50 as weight_goal
+        from (select username from Club_Member order by random() limit 25)
+        on conflict (username, date) do nothing;
+    end loop;
+end $$;

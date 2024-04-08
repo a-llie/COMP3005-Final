@@ -28,7 +28,7 @@ def member_book_session(conn, member: Member):
     cursor = conn.cursor()
     cursor.execute(
         "SELECT c.user_weight FROM Club_Member c WHERE c.username = %s", [member.username])
-    sessions = System.show_all_trainer_schedules(conn)
+    sessions = System.get_all_trainer_schedules(conn)
     member.browse_training_sessions(sessions, conn)
 
     session_choice = input(
@@ -58,37 +58,35 @@ def menu(conn):
             case "1":
                 Utils.print_menu_header(options[0])
                 username = System.create_new_user(conn)
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT c.first_name, c.last_name, c.user_weight FROM Club_Member c WHERE c.username = %s", [username])
-                first_name, last_name, weight = cursor.fetchone()
-                m = Member(username, first_name, last_name, weight, conn)
-                m.options(conn)
+                m = Member.sign_in(conn, username)
+                m.options()
             case "2":
                 Utils.print_menu_header(options[1])
                 m = Member.sign_in(conn)
                 if m is not None:
-                    m.options(conn)
+                    m.options()
             case "3":
                 Utils.print_menu_header(options[2])
-                result = Trainer.sign_in(conn)
-                if result is None:
-                    print("User not found")
-                    menu(conn)
-                else:
-                    id, first_name, last_name = result
-                    t = Trainer(first_name, last_name, id, conn)
-                    t.options()
+                while True:
+                    result = Trainer.sign_in(conn)
+                    if result is None:
+                        print("Trainer ID not found.\n")
+                    else:
+                        break
+                id, first_name, last_name = result
+                t = Trainer(first_name, last_name, id, conn)
+                t.options()
             case "4":
                 Utils.print_menu_header(options[3])
-                result = Admin.sign_in(conn)
-                if result is None:
-                    print("User not found")
-                    menu(conn)
-                else:
-                    first_name, last_name = result
-                    a = Admin(first_name, last_name, conn)
-                    a.options()
+                while True:
+                    result = Admin.sign_in(conn)
+                    if result is None:
+                        print("Admin ID not found.\n")
+                    else:
+                        break
+                first_name, last_name = result
+                a = Admin(first_name, last_name, conn)
+                a.options()
             case "5":
                 print("Exiting...")
                 conn.close()
@@ -96,7 +94,7 @@ def menu(conn):
             case "6":
                 debug_menu(conn)
             case _:
-                print("Invalid option")
+                print("Invalid option.\n")
 
 
 def debug_menu(conn):
@@ -126,7 +124,7 @@ def debug_menu(conn):
         elif menu_choice == len(tables)+1:
             menu(conn)
         else:
-            print("Invalid option")
+            print("Invalid option.\n")
 
 
 if __name__ == "__main__":
