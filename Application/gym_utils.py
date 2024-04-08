@@ -103,6 +103,15 @@ class Utils():
                 print("\nInvalid input.\n")
 
     @staticmethod
+    def prompt_for_non_blank(prompt: str):
+        while True:
+            result = input(prompt)
+            if result == "":
+                print("\nInvalid input.\n")
+                continue
+            return result
+
+    @staticmethod
     def number_to_month(number: int):
         months = ["January", "February", "March", "April", "May", "June",
                   "July", "August", "September", "October", "November", "December"]

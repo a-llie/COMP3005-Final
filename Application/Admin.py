@@ -14,7 +14,7 @@ class Admin(Person):
 
     @staticmethod
     def sign_in(conn):
-        id = input("Enter your id: ")
+        id = Utils.prompt_for_number("Enter your employee ID: ")
         print("\n")
         cursor = conn.cursor()
         cursor.execute(
@@ -24,6 +24,7 @@ class Admin(Person):
 
     def options(self):
         while True:
+            Utils.print_menu_header("Admin Menu")
             choices = [
                 "View member",
                 "View Upcoming Room Usage",
@@ -225,12 +226,14 @@ class Admin(Person):
     def __remove_class(self, class_id):
         cursor = self.conn.cursor()
 
-        # romovce all exercises that have the class as a foren key
+        # romovce all exercises that have the class as a foreign key
         cursor.execute('DELETE FROM Exercise WHERE class_id = %s', [class_id])
-        self.conn.commit()
+
+        # delete all related invoices
+        cursor.execute(
+            'DELETE FROM Invoice WHERE invoiced_service = %s', [class_id])
 
         # remove the class
-
         cursor.execute(
             'SELECT trainer_id, class_time FROM Class WHERE class_id = %s', [class_id])
 
@@ -245,7 +248,7 @@ class Admin(Person):
         cursor.execute(
             'INSERT INTO Schedule (employee_id, schedule_start) VALUES (%s, %s)', [results[0], results[1]])
 
-        print("Class removed.")
+        print("Class removed.\n")
         self.conn.commit()
 
     def __view_rooms(self):

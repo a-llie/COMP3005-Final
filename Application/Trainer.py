@@ -16,7 +16,7 @@ class Trainer(Person):
 
     @staticmethod
     def sign_in(conn):
-        id = input("Enter your id: ")
+        id = Utils.prompt_for_number("Enter your employee ID: ")
         cursor = conn.cursor()
         cursor.execute(
             "SELECT c.employee_id, c.first_name, c.last_name FROM Employee c WHERE c.employee_id = %s AND c.is_trainer = TRUE", [id])
@@ -25,6 +25,7 @@ class Trainer(Person):
 
     def options(self):
         while True:
+            Utils.print_menu_header("Trainer Menu")
             menu_choice = input(
                 f'\n{self.first_name}, choose an option: \n 1. Schedule management \n 2. View member \n 3. See upcoming classes. \n 4. Sign Out \n\n>>')
 

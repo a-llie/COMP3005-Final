@@ -58,7 +58,6 @@ def menu(conn):
             case "1":
                 Utils.print_menu_header(options[0])
                 username = System.create_new_user(conn)
-               
                 m = Member.sign_in(conn, username)
                 m.options()
             case "2":
@@ -68,24 +67,26 @@ def menu(conn):
                     m.options()
             case "3":
                 Utils.print_menu_header(options[2])
-                result = Trainer.sign_in(conn)
-                if result is None:
-                    print("User not found")
-                    menu(conn)
-                else:
-                    id, first_name, last_name = result
-                    t = Trainer(first_name, last_name, id, conn)
-                    t.options()
+                while True:
+                    result = Trainer.sign_in(conn)
+                    if result is None:
+                        print("Trainer ID not found.\n")
+                    else:
+                        break
+                id, first_name, last_name = result
+                t = Trainer(first_name, last_name, id, conn)
+                t.options()
             case "4":
                 Utils.print_menu_header(options[3])
-                result = Admin.sign_in(conn)
-                if result is None:
-                    print("User not found")
-                    menu(conn)
-                else:
-                    first_name, last_name = result
-                    a = Admin(first_name, last_name, conn)
-                    a.options()
+                while True:
+                    result = Admin.sign_in(conn)
+                    if result is None:
+                        print("Admin ID not found.\n")
+                    else:
+                        break
+                first_name, last_name = result
+                a = Admin(first_name, last_name, conn)
+                a.options()
             case "5":
                 print("Exiting...")
                 conn.close()

@@ -64,7 +64,7 @@ class System():
 
     @staticmethod
     def create_new_user(conn):
-        username = input("Enter a username: ")
+        username = Utils.prompt_for_non_blank("Enter a username: ")
 
         while True:
             cursor = conn.cursor()
@@ -76,14 +76,8 @@ class System():
             else:
                 break
 
-        first_name = input("Enter your first name: ")
-        while not first_name:
-            first_name = input("Enter your first name: ")
-
-        last_name = input("Enter your last name: ")
-        while not last_name:
-            last_name = input("Enter your last name: ")
-
+        first_name = Utils.prompt_for_non_blank("Enter your first name: ")
+        last_name = Utils.prompt_for_non_blank("Enter your last name: ")
         weight = Utils.prompt_for_number("Enter your weight: ")
         weight_goal = Utils.prompt_for_number("Enter your weight goal: ")
         #height = Utils.prompt_for_number("Enter your height: ")
@@ -97,9 +91,10 @@ class System():
             membership_type = Utils.prompt_for_number(
                 "Enter your membership type: 1. Basic, 50$/month, 2. Pro, 75$/month: ")
             if membership_type not in [1, 2]:
-                print("Invalid membership type\n")
+                print("Invalid membership type.\n")
                 continue
             break
+
         cursor = conn.cursor()
         cursor.execute(
             'INSERT INTO Club_Member (username, first_name, last_name, membership_type, join_date) VALUES (%s, %s, %s, %s, NOW())', [username, first_name, last_name, membership_type])

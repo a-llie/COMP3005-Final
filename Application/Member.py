@@ -31,6 +31,7 @@ class Member(Person):
             menu_choices += f"{i+1}. {option}\n"
 
         while True:
+            Utils.print_menu_header("Club Member Menu")
             menu_choice = input(
                 f'{self.username}, choose an option: \n\n{menu_choices} \n\n>>')
 
@@ -107,7 +108,7 @@ class Member(Person):
         self.book_class(chosen_class)
 
     @staticmethod
-    def sign_in(conn, user = None):
+    def sign_in(conn, user=None):
         if user is None:
             user = input("Enter your username: ")
         cursor = conn.cursor()
@@ -117,13 +118,12 @@ class Member(Person):
         if found is None:
             print("User not found.\n")
             return
-        
-        #most recent weight
+
+        # most recent weight
         cursor.execute(
             "SELECT weight FROM health  WHERE username = %s Order By date DESC", [user])
         weight = cursor.fetchone()[0]
 
-        
         user, first_name, last_name = found
         return Member(user, first_name, last_name, weight, conn)
 
