@@ -244,3 +244,10 @@ class System():
             case _, _:
                 out = System.find_members(
                     first, last, conn)
+
+    @staticmethod
+    def get_all_trainers(conn):
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT employee_id, first_name, last_name FROM Employee WHERE is_trainer = TRUE")
+        return cursor.fetchall()

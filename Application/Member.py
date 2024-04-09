@@ -16,11 +16,10 @@ class Member(Person):
 
     def options(self):
         options = [
-            "Book a class or training session",
+            "Manage classes and training sessions",
             "Update personal information",
             "View fitness achievements",
             "View health statistics",
-            "See upcoming classes",
             "Log an exercise",
             "Exercise logbook",
             "Pay bill",
@@ -55,22 +54,18 @@ class Member(Person):
                     self.get_health_statistics()
                     Utils.OK()
                 case "5":
-                    Utils.print_menu_header(options[4])
-                    self.__see_upcoming_classes()
-                    Utils.OK()
-                case "6":
                     Utils.print_menu_header(options[5])
                     self.__log_exercise()
                     Utils.OK()
-                case "7":
+                case "6":
                     Utils.print_menu_header(options[6])
                     self.__see_exercise_logbook()
                     Utils.OK()
-                case "8":
+                case "7":
                     Utils.print_menu_header(options[7])
                     self.__pay_bill()
                     Utils.OK()
-                case "9":
+                case "8":
                     print("Signing out...\n\n")
                     return
                 case _:
@@ -80,6 +75,9 @@ class Member(Person):
         choices = [
             "Book a class",
             "Book a training session",
+            "Reschedule a training session",
+            "Cancel a training session",
+            "See upcoming classes and training sessions",
             "Back"
         ]
 
@@ -91,22 +89,156 @@ class Member(Person):
             f"Choose an option: \n{menu_choices} \n\n>>")
         match slot_choice:
             case "1":
+                Utils.print_menu_header("Class Booking")
                 self.class_booking_process()
             case "2":
+                Utils.print_menu_header("Training Session Booking")
                 self.training_booking_process()
             case "3":
+                Utils.print_menu_header("Reschedule Training Session")
+                self.reschedule_training_session()
+            case "4":
+                Utils.print_menu_header("Cancel Training Session")
+                self.cancel_training_session()
+            case "5":
+                Utils.print_menu_header(
+                    "Upcoming Classes and Training Sessions")
+                self.__see_upcoming_classes()
+            case "6":
                 self.options()
             case _:
                 print("Invalid option. \n\n")
                 self.booking_choices()
                 return
 
+    def cancel_training_session(self):
+        chosen_session = self.__choose_from_upcoming_training_sessions()
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            'DELETE FROM Exercise WHERE class_id = %s AND username = %s', [chosen_session[4], self.username])
+
+        cursor.execute(
+            'DELETE FROM Class WHERE class_id = %s', [chosen_session[4]])
+
+        cursor.execute(
+            'INSERT INTO Schedule (employee_id, schedule_start, schedule_end) VALUES (%s, %s, %s)', [chosen_session[3], chosen_session[0], Utils.datetime_add_hour(chosen_session[0])])
+
+        self.conn.commit()
+
+        print("Session cancelled successfully.\n")
+
+    def reschedule_training_session(self):
+        chosen_session = self.__choose_from_upcoming_training_sessions()
+        cursor = self.conn.cursor()
+
+        if chosen_session is None:
+            return
+
+        cursor.execute(
+            'SELECT schedule_start FROM Schedule WHERE employee_id = %s AND schedule_start > NOW() ORDER BY schedule_start ASC', [chosen_session[3]])
+
+        trainer_times = cursor.fetchall()
+
+        print("Here are the trainer's other available times:\n")
+        Utils.print_table(
+            [("#", 0), ("Time", 22)], trainer_times, [22], True)
+
+        while True:
+            replacement_slot = Utils.prompt_for_number(
+                "Choose a time to reschedule to from the numbered options above: \n>> ")
+            if replacement_slot < 1 or replacement_slot > len(trainer_times):
+                print("Invalid choice.\n")
+                continue
+
+            break
+
+        replacement_time = trainer_times[replacement_slot - 1][0]
+        replacement_room = System.get_free_room(self.conn, replacement_time)
+
+        if replacement_room is None:
+            print("No rooms available at that time. Please choose another time.\n")
+            return
+
+        cursor.execute(
+            'UPDATE Exercise SET exercise_date = %s WHERE class_id = %s AND username = %s', [replacement_time, chosen_session[4], self.username])
+
+        cursor.execute(
+            'UPDATE Class SET class_time = %s,  room_num= %s WHERE class_id = %s', [replacement_time, replacement_room, chosen_session[4]])
+
+        cursor.execute(
+            'DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s', [chosen_session[3], replacement_time])
+
+        cursor.execute(
+            'INSERT INTO Schedule (employee_id, schedule_start, schedule_end) VALUES (%s, %s, %s)', [chosen_session[3], chosen_session[0], Utils.datetime_add_hour(chosen_session[0])])
+
+        self.conn.commit()
+        print("Session rescheduled successfully.\n")
+
+    def __choose_from_upcoming_training_sessions(self):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT c.class_time, c.room_num, c.exercise_type, c.trainer_id, c.class_id FROM Class c WHERE c.class_id IN (SELECT e.class_id FROM Exercise e WHERE e.username = %s) AND c.class_time > current_timestamp AND c.exercise_type = %s ORDER BY c.class_time ASC', [self.username, "personal training"])
+        results = cursor.fetchall()
+        if not results:
+            print("No upcoming classes.\n")
+            return
+
+        full_results = []
+        for row in results:
+            cursor.execute(
+                'SELECT e.first_name, e.last_name FROM Employee e WHERE e.employee_id = (SELECT c.trainer_id FROM Class c WHERE c.class_time = %s)', [row[0]])
+            trainer_name = cursor.fetchone()
+            row = list(row)
+            row.append(trainer_name[0] + " " + trainer_name[1])
+            full_results.append(
+                [row[0], row[1], row[2], trainer_name[0] + " " + trainer_name[1]])
+
+        Utils.print_table(
+            [("#", 0), ("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("Trainer Name", 25)], full_results, [20, 15, 25, 25], True)
+
+        while True:
+            choice = Utils.prompt_for_number(
+                "Choose a session to reschedule from the numbered options above: \n>> ")
+
+            if choice < 1 or choice > len(results):
+                print("Invalid choice.\n")
+                continue
+            break
+
+        return results[choice - 1]
+
+    @staticmethod
+    def browse_trainers(trainers):
+        print("Here are all the available trainers:\n")
+        Utils.print_table(
+            [("#", 3), ("First Name", 20), ("Last Name", 20)], trainers, [3, 20, 20])
+
     def training_booking_process(self):
-        sessions = System.get_all_trainer_schedules(self.conn)
+        trainers = System.get_all_trainers(self.conn)
+        Member.browse_trainers(trainers)
+
+        while True:
+            trainer_choice = Utils.prompt_for_number(
+                "Choose a trainer from the numbered options above: \n>>")
+            if trainer_choice < 1 or trainer_choice > len(trainers):
+                print("Invalid choice.\n")
+                continue
+            break
+
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT employee_id, schedule_start FROM Schedule WHERE employee_id = %s AND schedule_start > NOW() ORDER BY schedule_start', [trainer_choice])
+        sessions = cursor.fetchall()
         self.browse_training_sessions(sessions)
 
-        session_choice = input(
-            "Choose a session to book by entering the number: \n\n>>")
+        while True:
+            session_choice = Utils.prompt_for_number(
+                "Choose a session to book from the numbered options above: \n>>")
+            if session_choice < 1 or session_choice > len(sessions):
+                print("Invalid choice.\n")
+                continue
+            break
         session = sessions[int(session_choice) - 1]
         self.book_session(session)
 
@@ -381,16 +513,16 @@ class Member(Person):
 
     def browse_training_sessions(self, sessions):
         print("Here are all the available training sessions:\n")
-        i = 0
-        Utils.table_row_print(
-            [(" #", 2), ("Trainer Name", 25), ("Session Time", 20)])
-        print(f'{"-"*55}')
+
+        full_results = []
+
         for session in sessions:
-            i += 1
             employee_name = Utils.trainer_id_to_name(session[0], self.conn)
-            Utils.table_row_print(
-                [(str(i), 2), (employee_name[0] + " " + employee_name[1], 25), (str(session[1]), 20)])
-        print(f'{"-"*55}\n')
+            full_results.append(
+                [employee_name[0] + " " + employee_name[1], session[1]])
+
+        Utils.print_table(
+            [("#", 2), ("Trainer Name", 25), ("Session Time", 20)], full_results, [25, 20], True)
 
     # data step of booking a personal training session
     def book_session(self, session, exersise="personal training"):
@@ -451,7 +583,6 @@ class Member(Person):
             return
 
         full_results = []
-        print("\n Upcoming classes:\n")
         for row in results:
             cursor.execute(
                 'SELECT e.first_name, e.last_name FROM Employee e WHERE e.employee_id = (SELECT c.trainer_id FROM Class c WHERE c.class_time = %s)', [row[0]])
