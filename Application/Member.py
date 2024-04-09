@@ -266,11 +266,11 @@ class Member(Person):
 
         # check if the membership is valid
         mem = found[3]
-        if mem == "3":
+        if mem == "Cancelled":
             # invalid membership
             ans = Utils.prompt_for_non_blank(
                 "Would you like to renew your membership? (y/n)\n>>")
-            if ans.lower == 'n':
+            if ans.lower() == 'n':
                 return
 
             choice = Utils.prompt_for_non_blank(
@@ -279,12 +279,12 @@ class Member(Person):
                 case "1":
                     cursor = conn.cursor()
                     cursor.execute(
-                        'UPDATE Club_Member SET membership_type = "1" WHERE username = %s', [user])
+                        'UPDATE Club_Member SET membership_type = %s WHERE username = %s', ['Basic', user])
                     conn.commit()
                 case "2":
                     cursor = conn.cursor()
                     cursor.execute(
-                        'UPDATE Club_Member SET membership_type = "2" WHERE username = %s', [user])
+                        'UPDATE Club_Member SET membership_type = %s WHERE username = %s', ['Pro', user])
                     conn.commit()
                 case "3":
                     print("Membership not renewed, exiting...")
@@ -560,7 +560,6 @@ class Member(Person):
         cursor.execute(
             'UPDATE Class SET registered = registered + 1 WHERE class_id = %s', [chosen_class[6]])
 
-        print(chosen_class)
         self.conn.commit()
         self.__add_exercise(
             chosen_class[6], chosen_class[0], 60, chosen_class[3])
@@ -649,7 +648,7 @@ class Member(Person):
                     'SELECT exercise_type FROM Class WHERE class_id = %s AND class_time < NOW()', [row[2]])
                 service = cursor.fetchone()
                 if service is None:
-                    service = ["N/A"]
+                    service = ["Membership Fee"]
                 new_row = [row[0], row[1], service[0]]
                 full_results.append(new_row)
 

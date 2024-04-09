@@ -94,8 +94,8 @@ on CONFLICT (username) DO NOTHING;
 -- schedules for trainers
 insert into Schedule (employee_id, schedule_start) 
 select
-    -- Select a random trainer_id from 1 to 5 (assuming there are 5 trainers)
-    floor(random() * 5) + 1 as employee_id,
+    -- Select a random trainer_id from 1 to 5 (assuming there are 10 trainers)
+    floor(random() * 10) + 1 as employee_id,
     -- Select a random timestamp from today to 90 days ahead between hours of 8:00 and 18:00
     NOW() + (random() * (NOW()+'90 days' - NOW())) as schedule_start
 from generate_series(1, 500) as i
