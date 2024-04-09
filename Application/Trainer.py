@@ -175,7 +175,7 @@ class Trainer(Person):
 
         # find all classes that user is registered in
         cursor.execute(
-            'SELECT c.class_time, c.room_num, c.exercise_type, c.registered FROM Class c WHERE c.trainer_id = %s AND c.class_time > current_timestamp', [self.trainer_ID])
+            'SELECT c.class_time, c.room_num, c.exercise_type, c.registered FROM Class c WHERE c.trainer_id = %s AND c.class_time > current_timestamp ORDER BY c.class_time ASC', [self.trainer_ID])
 
         results = cursor.fetchall()
         if not results:
