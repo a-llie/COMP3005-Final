@@ -89,7 +89,7 @@ select
         else 'Wilson'
     end as last_name
     
-from generate_series(1, 25) as i
+from generate_series(1, 1000) as i
 on CONFLICT (username) DO NOTHING;
 
 -- schedules for trainers
@@ -99,7 +99,7 @@ select
     floor(random() * 5) + 1 as employee_id,
     -- Select a random timestamp from today to 90 days ahead between hours of 8:00 and 18:00
     NOW() + (random() * (NOW()+'90 days' - NOW())) as schedule_start
-from generate_series(1, 100) as i
+from generate_series(1, 1000) as i
 on conflict (employee_id, schedule_start) do nothing;
 
 
@@ -133,7 +133,7 @@ select
         when 1 then 50.00
         ELSE 75.00
     end as price
-from generate_series(1, 300) as i
+from generate_series(1, 200) as i
 where not exists -- no overlapping room_num, trainer_id, and class_time
 (select * from Class c where c.trainer_id = trainer_id and c.class_time = class_time)
 on conflict (room_num, class_time) do nothing;
@@ -148,7 +148,7 @@ declare
     chosen_class_id integer;
 begin
     -- add 25 random participants to classes
-    for i in 1..200 loop
+    for i in 1..2000 loop
         select c.class_id into chosen_class_id
         from Class c
         where c.capacity > c.registered  -- respect capacity constraint
@@ -192,7 +192,7 @@ declare
     chosen_time timestamp;
     chosen_user varchar(255);
 begin
-    for i in 1..25 loop
+    for i in 1..1000 loop
         select t.employee_id into chosen_trainer_id
         from Employee t
         where t.is_trainer = true
@@ -224,7 +224,8 @@ begin
                 50.00 as price
             -- update registered count
             where not exists -- no overlapping room_num, and class_time
-            (select * from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time);
+            (select * from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time)
+            on conflict (room_num, class_time) DO NOTHING;
 
             insert into Exercise(duration, exercise_date, exercise_type, class_id, username)
             select 
@@ -233,7 +234,7 @@ begin
                 'personal training',
                 (select c.class_id from Class c where c.trainer_id = chosen_trainer_id and c.class_time = chosen_time),
                 chosen_user
-            on conflict (class_id, username) DO NOTHING;
+            on conflict (class_id, username, exercise_date) DO NOTHING;
 
             delete from Schedule s
             where s.employee_id = chosen_trainer_id and s.schedule_start = chosen_time;
@@ -315,7 +316,7 @@ WHERE class_time <= NOW() AND NOT EXISTS (
 
 DO $$
 begin 
-    for i in 1..25 loop
+    for i in 1..10000 loop
         insert into Health (username, date, weight, cardio_time, lifting_weight, weight_goal)
         select 
             username,

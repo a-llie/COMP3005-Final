@@ -312,7 +312,7 @@ class Member(Person):
                         "What is your last name? >> ")
                     cursor = self.conn.cursor()
                     cursor.execute(
-                        'UPDATE Club_Member SET first_name = %s, last_name = %s', [first, last])
+                        'UPDATE Club_Member SET first_name = %s, last_name = %s WHERE username = %s', [first, last, self.username])
                     self.conn.commit()
                     self.first_name = first
                     self.last_name = last
@@ -478,7 +478,7 @@ class Member(Person):
         else:
             Utils.print_table(
                 [("Date", 20), ("Exercise Type", 15),
-                 ("Duration in Minutes", 20)], past, [20, 15, 10])
+                 ("Duration in Minutes", 20)], past, [20, 15, 20])
             print("\n")
 
     def __add_exercise(self, class_id, startTime, duration, exercise_type: str) -> bool:
@@ -527,8 +527,13 @@ class Member(Person):
              ("Service", 15)], full_results, [20, 10, 15], True
         )
 
-        choice = input(
-            f'\nEnter the number of the invoice you would like to pay (0 to exit): \n>>')
+        while True:
+            choice = Utils.prompt_for_number(
+                '\nEnter the number of the invoice you would like to pay (0 to exit): \n>>')
+            if choice > len(results) or choice < 0:
+                print("Invalid choice.\n")
+                continue
+            break
 
         if choice == '0':
             return

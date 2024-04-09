@@ -35,51 +35,13 @@ class Trainer(Person):
                     self.__manage_schedule_table()
 
                 case "2":
-                    while True:
-                        choice = input(
-                            "Would you like to search by: \n 1. username \n 2. name \n 3. Cancel \n\n>>")
-                        match choice:
-                            case "1":
-                                user = input("Input username: ")
-                                out = System.find_members(user, self.conn)
-
-                                if out is None or len(out) == 0:
-                                    print("User not found.\n")
-                                    continue
-                                elif len(out) > 1:
-                                    i = 1
-                                    print(
-                                        "Multiple users found, enter number of user you'd like to see:")
-                                    for user in out:
-                                        print(f'{i}. {user[0]}')
-                                        i += 1
-                                    # -- is this supposed to be indented?--
-                                    while True:
-                                        choice = Utils.prompt_for_number(">>")
-                                        if choice < 1 or choice > len(out):
-                                            print("Invalid choice.")
-                                            continue
-                                        break
-                                else:
-                                    choice = 1
-                                # -- causes indexing error --
-                                print(out[choice - 1])
-                                # display
-                                System.print_member(out[choice - 1])
-
-                                input("OK [Press Enter]")
-
-                            case "2":
-                                self.search_for_user(False)
-                            case "3":
-                                break
-                            case _:
-                                print("Invalid option.\n")
+                    self.search_for_member()
+                    Utils.OK()
 
                 case "3":
                     # see whats booked for you (in the class table )
                     self.__see_upcoming_classes()
-
+                    Utils.OK()
                 case "4":
                     print("Signing out...\n\n")
                     return
@@ -220,7 +182,7 @@ class Trainer(Person):
             print("No upcoming classes.")
             return
 
-        print("Upcoming classes:")
+        Utils.print_menu_header("Your Upcoming Classes")
 
         Utils.print_table(
-            [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("# Registered", 5)], results, [20, 15, 25, 5], False)
+            [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("# Registered", 12)], results, [20, 15, 25, 12], False)

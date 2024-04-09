@@ -13,15 +13,15 @@ MAINTANANCE_INTERVAL = 3  # months
 
 class System():
     @staticmethod
-    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price, print=True):
+    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price, print_table=True):
         cursor = conn.cursor()
         try:
             cursor.execute(
                 'INSERT INTO Class (room_num, class_time, trainer_id, capacity, registered, exercise_type, price) VALUES (%s, %s, %s, %s, %s, %s, %s)', [room_id, start, trainer_id, capacity, registered, exercise, price])
             conn.commit()
         except psycopg2.errors.NotNullViolation as e:
-            print("ERROR: class insert error:\n%s", [e])
-            print("Invalid time, please try again")
+            print_table("ERROR: class insert error:\n%s", [e])
+            print_table("Invalid time, please try again")
             return False
 
         cursor.execute(
@@ -29,7 +29,7 @@ class System():
 
         exer_class = cursor.fetchone()
 
-        if print:
+        if print_table:
             print(f"\nClass {str(exer_class[0])} added successfully.\n")
             Utils.print_table(
                 [("Class Time", 20), ("Room Number", 15), ("Trainer ID", 15), ("Exercise Type", 20), ("Registered", 10), ("Capacity", 10), ("Price", 10)], [exer_class], [20, 15, 15, 20, 10, 10, 10])

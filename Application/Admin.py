@@ -44,21 +44,8 @@ class Admin(Person):
             match menu_choice:
 
                 case "1":
-                    Utils.print_menu_header("View Member")
-                    choice = input(
-                        "Would you like to search by: \n 1. username \n 2. name \n")
-                    match choice:
-                        case "1":
-                            Utils.print_menu_header("Search by Username")
-                            self.search_for_user(True)
-                            continue
-                        case "2":
-                            Utils.print_menu_header("Search by name")
-                            self.search_for_user(False)
-                            continue
-                        case _:
-                            print("Invalid option.\n")
-                            Utils.OK()
+                    self.search_for_member()
+                    Utils.OK()
 
                 case "2":
                     # add a ability to toggle a romm so that it cant be booked?
@@ -214,10 +201,8 @@ class Admin(Person):
             return
 
         # creat class
-        if not System.add_class(self.conn, room_id, start, trainer_id,
-                                capacity, 0, exercise, price):
-            self.conn, cursor = System.reset_connection(self.conn)
-            return
+        System.add_class(self.conn, room_id, start, trainer_id,
+                         capacity, 0, exercise, price)
 
         # remove that block from the free scedual of the trainer
         cursor.execute('DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s', [
@@ -277,7 +262,7 @@ class Admin(Person):
             return
 
         Utils.print_table(
-            [("Room Number", 15), ("Class ID", 10), ("Class Time", 20), ("Trainer", 30), ("Exercise Type", 15)], results, [15, 10, 20, 30, 15])
+            [("Room Number", 15), ("Class ID", 10), ("Class Time", 20), ("Trainer", 30), ("Exercise Type", 25)], results, [15, 10, 20, 30, 25])
 
     def __get_all_equipment(self):
         cursor = self.conn.cursor()
@@ -359,7 +344,7 @@ class Admin(Person):
         cursor = self.conn.cursor()
         cursor.execute("""INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
                     SELECT 
-                        DATE_TRUNC(%s, CURRENT_DATE) AS invoice_date,
+                        DATE_TRUNC('month', CURRENT_DATE) AS invoice_date,
                         c.username,
                         c.monthly_fee,
                         null AS invoiced_service,
@@ -367,8 +352,8 @@ class Admin(Person):
                     FROM 
                         Club_Member c
                     WHERE not exists
-                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC(%s, CURRENT_DATE) AND i.invoiced_service is null)
-                        AND c.membership_type != %s""", ['month', 'month', 'Cancelled'])
+                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)
+                        AND c.membership_type != '3'""")
 
         self.conn.commit()
         print(
