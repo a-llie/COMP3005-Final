@@ -1,5 +1,7 @@
 # COMP3005-Final
 
+This CLI program simulates a user's experience at a gym, with the option of acting as a gym member, trainer, or administrative stuff. The user interface is written in python, while the backend data is supported by postgresql.
+
 ## Pre-requisites:
 
 - postgres installed
