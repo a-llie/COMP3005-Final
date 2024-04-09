@@ -88,7 +88,7 @@ select
         else 'Wilson'
     end as last_name
     
-from generate_series(1, 1000) as i
+from generate_series(1, 200) as i
 on CONFLICT (username) DO NOTHING;
 
 -- schedules for trainers
@@ -98,7 +98,7 @@ select
     floor(random() * 5) + 1 as employee_id,
     -- Select a random timestamp from today to 90 days ahead between hours of 8:00 and 18:00
     NOW() + (random() * (NOW()+'90 days' - NOW())) as schedule_start
-from generate_series(1, 1000) as i
+from generate_series(1, 500) as i
 on conflict (employee_id, schedule_start) do nothing;
 
 
@@ -146,7 +146,7 @@ declare
     participants_count integer;
     chosen_class_id integer;
 begin
-    -- add 25 random participants to classes
+    -- add participants to classes
     for i in 1..2000 loop
         select c.class_id into chosen_class_id
         from Class c
@@ -243,10 +243,26 @@ begin
 end $$;
 
 
-INSERT INTO Club_Member (username, join_date,first_name, last_name, membership_type)
-VALUES
- ('testuser', NOW(),  'Test', 'User', 'Basic');
-
+-- insert random exercise log data for all users
+INSERT INTO Exercise(username, exercise_date, exercise_type, duration)
+SELECT 
+    Club_Member.username,
+    DATE_TRUNC('minute', NOW() - (interval '1 day' * floor(random() * 30))),
+    CASE (floor(random() * 8))
+        WHEN 0 THEN 'Cardio'
+        WHEN 1 THEN 'Strength'
+        WHEN 2 THEN 'HIIT'
+        WHEN 3 THEN 'Pilates'
+        WHEN 4 THEN 'Zumba'
+        WHEN 5 THEN 'Kickboxing'
+        WHEN 6 THEN 'Cycling'
+        ELSE 'Yoga'
+    END as exercise_type,
+    60
+FROM 
+    Club_Member
+    CROSS JOIN generate_series(1, 15) as i
+ON CONFLICT (username, exercise_date, class_id) DO NOTHING;
 
 
 INSERT INTO Invoice (invoice_date, username, amount, paid)
@@ -313,6 +329,7 @@ WHERE class_time <= NOW() AND NOT EXISTS (
     AND i.invoice_date = class_participants.class_time
 );
 
+-- insert health metric data
 DO $$
 begin 
     for i in 1..10000 loop
