@@ -35,104 +35,77 @@ class Trainer(Person):
                     self.__manage_schedule_table()
 
                 case "2":
-                    while True:
-                        choice = input(
-                            "Would you like to search by: \n 1. username \n 2. name \n\n>>")
-                        match choice:
-                            case "1":
-                                user = input("Input username: ")
-                                out = System.find_members(user, self.conn)
-
-                                if out is None:
-                                    print("User not found")
-                                    continue
-                                elif len(out) > 1:
-                                    i = 1
-                                    print(
-                                        "Multiple users found, enter number of user you'd like to see:")
-                                    for user in out:
-                                        print(f'{i}. {user[0]}')
-                                        i += 1
-                                    # -- is this supposed to be indented?--
-                                    try:
-                                        choice = int(input(">>"))
-                                    except:
-                                        print("Invalid choice")
-                                        continue
-                                else:
-                                    choice = 1
-                                # -- causes indexing error --
-                                print(out[choice - 1])
-                                # display
-                                System.print_member(out[choice - 1])
-
-                                input("OK [Press Enter]")
-
-                            case "2":
-                                first = input("Input first name: ")
-                                last = input("Input last name: ")
-                                out = System.find_members(
-                                    first, last, self.conn)
-                                # display
-                                System.print_member(out)
-
-                                input("OK [Press Enter]")
-
-                            case _:
-                                print("Invalid option.\n")
+                    self.search_for_member()
+                    Utils.OK()
 
                 case "3":
                     # see whats booked for you (in the class table )
                     self.__see_upcoming_classes()
-
+                    Utils.OK()
                 case "4":
                     print("Signing out...\n\n")
                     return
                 case _:
                     print("Invalid option.\n")
 
-    def __add_availability(self, start, end):  # psudo code
-        # breack it into one our blocks
-        duration = Utils.timestamp_to_datetime(
-            end) - Utils.timestamp_to_datetime(start)
-        hours = divmod(duration.total_seconds(), 3600)[0]
+    def __add_availability(self, start, dur: int):  # psudo code
+        # breack it into one hour blocks
         cursor = self.conn.cursor()
+        error = False
+        success_count = 0
 
-        # insert adeal with round up to next hour here
-        hours = math.ceil(hours)
-
-        for i in range(hours):
-            next_time = Utils.timestamp_add_hour(start)
+        for i in range(dur):
+            next_time = Utils.datetime_add_hour(start)
             try:
                 cursor.execute(
                     'INSERT INTO Schedule (employee_id, schedule_start, schedule_end) VALUES (%s, %s, %s)', [self.trainer_ID, start, next_time])
-
+                self.conn.commit()
+                success_count += 1
             except psycopg2.errors.UniqueViolation as e:
                 print(
-                    "ERROR: schedual insert error, add_availibility:\n%s", [e])
-
+                    f"ERROR: Failed to add availability {start}. ")
+                self.conn, cursor = System.reset_connection(self.conn)
+                error = True
             start = next_time
 
-    def __remove_availability(self, start, end):  # psudo code
+        if not error:
+            print("Availability added successfully.")
+        if error and success_count > 0:
+            print("Some availability added successfully.")
+        if error and success_count == 0:
+            print("No availability added successfully.")
+        else:
+            print("All availability added successfully.")
+
+    def __remove_availability(self, start, dur: int):  # psudo code
         # breack it into one our blocks
-        duration = Utils.timestamp_to_datetime(
-            end) - Utils.timestamp_to_datetime(start)
-        hours = divmod(duration.total_seconds(), 3600)[0]
+
         cursor = self.conn.cursor()
+        error = False
+        success_count = 0
 
-        hours = math.ceil(hours)
-
-        for i in range(hours):
-            next_time = Utils.timestamp_add_hour(start)
+        for i in range(dur):
+            next_time = Utils.datetime_add_hour(start)
             try:
                 cursor.execute(
                     'DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s AND schedule_end = %s', [self.trainer_ID, start, next_time])
-
+                self.conn.commit()
+                success_count += 1
             except psycopg2.errors.UniqueViolation as e:
                 print(
-                    "ERROR: schedual insert error, remove_availibility:\n%s", [e])
+                    f"ERROR: Failed to remove availability {start}.")
+
+                self.conn, cursor = System.reset_connection(self.conn)
+                error = True
 
             start = next_time
+
+        if not error:
+            print("Availability removed successfully.")
+        if error and success_count > 0:
+            print("Some availability removed successfully.")
+        else:
+            print("All availability removed successfully.")
 
     def __manage_schedule_table(self):
         while True:
@@ -142,26 +115,55 @@ class Trainer(Person):
             match menu_choice:
                 case "1":
                     System.get_trainer_schedule(self.conn, self.trainer_ID)
-                    input("OK [Press Enter]")
+                    Utils.OK()
 
                 case "2":
                     # take start time in format
-                    start = input(
-                        "Give Start time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
+                    start = Utils.get_datetime(
+                        "Specify your availability: \n", False)
                     # take end time in format
-                    end = input(
-                        "Give end time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
+                    dur = Utils.prompt_for_number(
+                        "How many hours will you be working for? \n>> ")
 
-                    self.__add_availability(start, end)
+                    self.__add_availability(start, dur)
+
+                    Utils.OK()
 
                 case "3":
-                    # take start time in format
-                    start = input(
-                        "Give Start time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
-                    end = input(
-                        "Give end time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
 
-                    self.__remove_availability(start, end)
+                    schedule = System.get_trainer_schedule(
+                        self.conn, self.trainer_ID, False)
+
+                    if schedule is None:
+                        print("No schedule found.")
+                        continue
+
+                    print("Your schedule:")
+                    Utils.print_table(
+                        [("Start Time", 20), ("End Time", 20)], schedule, [20, 20], True)
+
+                    while True:
+                        choice = Utils.prompt_for_number(
+                            "Choose a block to remove from the numbered options above: \n>> ")
+
+                        if choice < 1 or choice > len(schedule):
+                            print("Invalid choice.")
+                            continue
+                        break
+
+                    start = schedule[choice - 1][0]
+
+                    continuous = Utils.prompt_for_non_blank(
+                        "Would you like to remove a consecutive number of hours? [y/n] \n>> ")
+
+                    if continuous.lower() == "y":
+                        dur = Utils.prompt_for_number(
+                            "How many hours will you be removing: \n>> ")
+                    else:
+                        dur = 1
+
+                    self.__remove_availability(start, dur)
+                    Utils.OK()
 
                 case "4":
                     break
@@ -180,11 +182,7 @@ class Trainer(Person):
             print("No upcoming classes.")
             return
 
-        print("Upcoming classes:")
-        print(f'    {"Class Time".ljust(20)} | {"Room Number".ljust(15)} | {"Exercise Type".ljust(25)} | {"# Registered".ljust(5)} ')
-        print('-' * 95)
-        for row in results:
-            print(
-                f'    {str(row[0]).ljust(20)} | {(" Room " + str(row[1])).ljust(15)} | {row[2].ljust(25)} | {str(row[3]).ljust(5)}')
+        Utils.print_menu_header("Your Upcoming Classes")
 
-        print('-' * 95)
+        Utils.print_table(
+            [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("# Registered", 12)], results, [20, 15, 25, 12], False)

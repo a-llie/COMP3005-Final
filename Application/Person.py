@@ -45,17 +45,14 @@ class Person():
 
         if out == [] or out is None:
             print("No users found. \n")
-            Utils.OK()
             return
 
         chosen_user = self.__choose_user_from_list(out)
 
         if chosen_user == False:
-            Utils.OK()
             return
 
         System.print_member(out[chosen_user-1])
-        Utils.OK()
 
     @staticmethod
     def __choose_user_from_list(out: list):
@@ -67,12 +64,14 @@ class Person():
             Utils.print_table(
                 [("# ", 0), ("Username", 15), ("First Name", 20), ("Last Name", 20)], list, [15, 20, 20], True)
 
-            chosen_user = Utils.prompt_for_number(
-                "Choose a user from above. >> ")
+            while True:
+                chosen_user = Utils.prompt_for_number(
+                    "Choose a user from above. >> ")
 
-            if chosen_user < 1 or chosen_user > len(out):
-                print("Invalid choice.")
-                return False
+                if chosen_user < 1 or chosen_user > len(out):
+                    print("Invalid choice.")
+                    continue
+                break
             return chosen_user
         else:
             return 1
@@ -89,3 +88,21 @@ class Person():
             Utils.table_row_print(
                 [(str(i), 2), (employee_name[0] + " " + employee_name[1], 25), (str(session[0]), 20)])
         print(f'{"-"*55}\n')
+
+    def search_for_member(self):
+        Utils.print_menu_header("View Member")
+        while True:
+            choice = input(
+                "Would you like to search by: \n 1. username \n 2. name \n")
+            match choice:
+                case "1":
+                    Utils.print_menu_header("Search by Username")
+                    self.search_for_user(True)
+                    break
+                case "2":
+                    Utils.print_menu_header("Search by name")
+                    self.search_for_user(False)
+                    break
+                case _:
+                    print("Invalid option.\n")
+                    continue

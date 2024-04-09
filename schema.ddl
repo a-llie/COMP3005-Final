@@ -58,20 +58,23 @@ create table Invoice (
     amount float not null,
     invoiced_service integer,
     paid boolean not null,
-    foreign key (username) references Club_Member(username),
+    constraint fk_username foreign key (username) references Club_Member(username),
     foreign key (invoiced_service) references Class(class_id)
 );
 
 create table Exercise (
+    exercise_id serial primary key,
     duration float not null,
     exercise_date timestamp not null,
     exercise_type varchar(255) not null,
-    class_id integer not null,
     username varchar(255) not null,
-    foreign key (class_id) references Class(class_id),
-    foreign key (username) references Club_Member(username),
-    primary key (class_id, username)
+    class_id integer,
+    foreign key (class_id) references Class(class_id) MATCH SIMPLE,
+    constraint fk_username foreign key (username) references Club_Member(username),
+    constraint unique_exercise UNIQUE (username, exercise_date, class_id)
 );
+
+
 
 create table Health (
     username varchar(255) not null,
@@ -81,7 +84,7 @@ create table Health (
     lifting_weight float not null,
     weight_goal float not null,
     primary key (username, date),
-    foreign key (username) references Club_Member(username)
+    constraint fk_username foreign key (username) references Club_Member(username)
 );
 
 

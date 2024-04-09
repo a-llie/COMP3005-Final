@@ -44,21 +44,8 @@ class Admin(Person):
             match menu_choice:
 
                 case "1":
-                    Utils.print_menu_header("View Member")
-                    choice = input(
-                        "Would you like to search by: \n 1. username \n 2. name \n")
-                    match choice:
-                        case "1":
-                            Utils.print_menu_header("Search by Username")
-                            self.search_for_user(True)
-                            continue
-                        case "2":
-                            Utils.print_menu_header("Search by name")
-                            self.search_for_user(False)
-                            continue
-                        case _:
-                            print("Invalid option.\n")
-                            Utils.OK()
+                    self.search_for_member()
+                    Utils.OK()
 
                 case "2":
                     # add a ability to toggle a romm so that it cant be booked?
@@ -275,7 +262,7 @@ class Admin(Person):
             return
 
         Utils.print_table(
-            [("Room Number", 15), ("Class ID", 10), ("Class Time", 20), ("Trainer", 30), ("Exercise Type", 15)], results, [15, 10, 20, 30, 15])
+            [("Room Number", 15), ("Class ID", 10), ("Class Time", 20), ("Trainer", 30), ("Exercise Type", 25)], results, [15, 10, 20, 30, 25])
 
     def __get_all_equipment(self):
         cursor = self.conn.cursor()
@@ -365,7 +352,8 @@ class Admin(Person):
                     FROM 
                         Club_Member c
                     WHERE not exists
-                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)""")
+                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)
+                        AND c.membership_type != '3'""")
 
         self.conn.commit()
         print(
