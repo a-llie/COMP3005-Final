@@ -146,6 +146,7 @@ class Member(Person):
                         'UPDATE Club_Member SET membership_type = "2" WHERE username = %s', [user])
                     conn.commit()
                 case "3":
+                    print("Membership not renewed, exiting...")
                     return
                 case _:    
                     print("Invalid option. \n\n")
@@ -167,8 +168,21 @@ class Member(Person):
         self.__add_exercise(None, date, dur, exercise_type)
 
         #ask if they would like to update thoer health stats
-        
-        pass
+        ans = Utils.prompt_for_non_blank("would you like to update your healh progress? (y/n)\n>>")
+        if ans == 'y':
+            weight = Utils.prompt_for_number("Enter your weight: ")
+            weight_goal = Utils.prompt_for_number("Enter your weight goal: ")
+            #height = Utils.prompt_for_number("Enter your height: ")
+            cardio_time = Utils.prompt_for_number(
+                "How long can you currently do cardio for? (in minutes): ")
+            lifting_weight = Utils.prompt_for_number(
+                "How much can you currently lift? (in lbs): ")
+            cursor = self.conn.cursor()            
+            cursor.execute(
+                'INSERT INTO Health (username, date, weight, cardio_time, lifting_weight, weight_goal) VALUES (%s, NOW(), %s, %s, %s, %s)', [self.username, weight, cardio_time, lifting_weight, weight_goal])
+            self.conn.commit()
+
+            
 
     def update_info(self):
         # allowe the user to update atributes about themselves
@@ -247,9 +261,6 @@ class Member(Person):
                 case _:
                     print("Invalid option. \n\n")
 
-
-    def get_exercises():
-        pass
 
     def get_fitness_achievements():
         # best of

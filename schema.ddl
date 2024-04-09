@@ -68,9 +68,12 @@ create table Exercise (
     exercise_type varchar(255) not null,
     class_id integer,
     username varchar(255) not null,
-    foreign key (class_id) references Class(class_id),
+    foreign key (class_id) references Class(class_id) MATCH SIMPLE,
     constraint fk_username foreign key (username) references Club_Member(username),
-    primary key (class_id, username)
+    primary key ( username)
+    CONSTRAINT unique_class_username 
+        UNIQUE (class_id, username) 
+        WHERE class_id IS NOT NULL
 );
 
 create table Health (
