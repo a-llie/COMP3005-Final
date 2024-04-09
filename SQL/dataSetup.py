@@ -7,9 +7,6 @@ DB_NAME = 'Gym'
 HOST = 'localhost'
 PORT = '5432'
 
-TABLE_CREATION_FILE = 'schemaDDL.sql'
-TABLE_POPULATION_FILE = 'sampleDataDML.sql'
-
 
 def execute_sql_file(file_path, conn):
     with open(file_path, 'r') as sql_file:
@@ -75,8 +72,20 @@ def main():
 
     # # Execute SQL commands from the file
 
-    execute_sql_file(TABLE_CREATION_FILE, conn)
-    execute_sql_file(TABLE_POPULATION_FILE, conn)
+    files = [None, None]
+    for file in os.listdir():
+        if file.startswith('schema') and file.endswith('.sql'):
+            files[0] = file
+        elif file.startswith('sample') and file.endswith('.sql'):
+            files[1] = file
+
+    for file in files:
+        if file is not None:
+            execute_sql_file(file, conn)
+
+    if files[0] is None:
+        print("No schema file found. Exiting.")
+        return
 
 
 if __name__ == "__main__":
