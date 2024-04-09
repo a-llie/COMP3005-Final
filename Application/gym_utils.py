@@ -18,22 +18,25 @@ class Utils():
         return dt.strftime(f)
 
     @staticmethod
-    def get_datetime(header: str):
+    def get_datetime(header: str, minute: bool = True):
         print(header)
-        year = Utils.prompt_for_number("Year:")
-        month = Utils.prompt_for_number("Month (number):")
-        day = Utils.prompt_for_number("Day:")
+        year = Utils.prompt_for_number("Year: >> ")
+        month = Utils.prompt_for_number("Month (number): >>")
+        day = Utils.prompt_for_number("Day: >>")
 
-        hour = Utils.prompt_for_number("Hour (24-h clock):")
-        minute = Utils.prompt_for_number("Minute:")
-        return datetime(year, month, day, hour, minute, 0)
+        hour = Utils.prompt_for_number("Hour (24-h clock): >>")
+
+        if minute:
+            minute = Utils.prompt_for_number("Minute: >>")
+            return datetime(year, month, day, hour, minute)
+        return datetime(year, month, day, hour, 0, 0)
 
     @staticmethod
     def timestamp_add_hour(ts):
         dt = Utils.timestamp_to_datetime(ts)
         dt += timedelta(hours=1)
         return Utils.datetime_to_timestamp(dt)
-    
+
     @staticmethod
     def datetime_add_hour(dt):
         dt += timedelta(hours=1)

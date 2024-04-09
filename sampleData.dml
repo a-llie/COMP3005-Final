@@ -170,7 +170,7 @@ begin
                 ) as username
             from Class c
             where c.class_id = chosen_class_id
-            on CONFLICT (username) DO NOTHING;
+           ON CONFLICT (username, exercise_date, class_id) DO NOTHING;
 
             -- update registered count
             update Class

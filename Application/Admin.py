@@ -214,8 +214,10 @@ class Admin(Person):
             return
 
         # creat class
-        System.add_class(self.conn, room_id, start, trainer_id,
-                         capacity, 0, exercise, price)
+        if not System.add_class(self.conn, room_id, start, trainer_id,
+                                capacity, 0, exercise, price):
+            self.conn, cursor = System.reset_connection(self.conn)
+            return
 
         # remove that block from the free scedual of the trainer
         cursor.execute('DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s', [
@@ -357,7 +359,7 @@ class Admin(Person):
         cursor = self.conn.cursor()
         cursor.execute("""INSERT INTO Invoice (invoice_date, username, amount, invoiced_service, paid)
                     SELECT 
-                        DATE_TRUNC('month', CURRENT_DATE) AS invoice_date,
+                        DATE_TRUNC(%s, CURRENT_DATE) AS invoice_date,
                         c.username,
                         c.monthly_fee,
                         null AS invoiced_service,
@@ -365,8 +367,8 @@ class Admin(Person):
                     FROM 
                         Club_Member c
                     WHERE not exists
-                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)
-                        AND c.membership_type != '3'""")
+                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC(%s, CURRENT_DATE) AND i.invoiced_service is null)
+                        AND c.membership_type != %s""", ['month', 'month', 'Cancelled'])
 
         self.conn.commit()
         print(

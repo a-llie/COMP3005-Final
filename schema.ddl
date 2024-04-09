@@ -63,18 +63,18 @@ create table Invoice (
 );
 
 create table Exercise (
+    exercise_id serial primary key,
     duration float not null,
     exercise_date timestamp not null,
     exercise_type varchar(255) not null,
-    class_id integer,
     username varchar(255) not null,
+    class_id integer,
     foreign key (class_id) references Class(class_id) MATCH SIMPLE,
     constraint fk_username foreign key (username) references Club_Member(username),
-    primary key ( username)
-    CONSTRAINT unique_class_username 
-        UNIQUE (class_id, username) 
-        WHERE class_id IS NOT NULL
+    constraint unique_exercise UNIQUE (username, exercise_date, class_id)
 );
+
+
 
 create table Health (
     username varchar(255) not null,

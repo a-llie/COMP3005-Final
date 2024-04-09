@@ -67,12 +67,14 @@ class Person():
             Utils.print_table(
                 [("# ", 0), ("Username", 15), ("First Name", 20), ("Last Name", 20)], list, [15, 20, 20], True)
 
-            chosen_user = Utils.prompt_for_number(
-                "Choose a user from above. >> ")
+            while True:
+                chosen_user = Utils.prompt_for_number(
+                    "Choose a user from above. >> ")
 
-            if chosen_user < 1 or chosen_user > len(out):
-                print("Invalid choice.")
-                return False
+                if chosen_user < 1 or chosen_user > len(out):
+                    print("Invalid choice.")
+                    continue
+                break
             return chosen_user
         else:
             return 1

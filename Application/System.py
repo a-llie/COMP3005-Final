@@ -2,14 +2,18 @@ import psycopg2
 from multipledispatch import dispatch
 from datetime import datetime, timedelta
 from gym_utils import Utils
-# placeholder
+import os
 
+
+DB_NAME = 'Gym'
+HOST = 'localhost'
+PORT = '5432'
 MAINTANANCE_INTERVAL = 3  # months
 
 
 class System():
     @staticmethod
-    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price):
+    def add_class(conn, room_id, start, trainer_id, capacity, registered, exercise, price, print=True):
         cursor = conn.cursor()
         try:
             cursor.execute(
@@ -18,18 +22,19 @@ class System():
         except psycopg2.errors.NotNullViolation as e:
             print("ERROR: class insert error:\n%s", [e])
             print("Invalid time, please try again")
-            return
+            return False
 
         cursor.execute(
             'SELECT  c.class_time, c.room_num, c.trainer_id, c.exercise_type, c.registered, c.capacity, c.price  FROM Class c WHERE c.room_num = %s AND c.class_time = %s', [room_id, start])
 
         exer_class = cursor.fetchone()
 
-        print(f"\nClass {str(exer_class[0])} added successfully.\n")
-        Utils.print_table(
-            [("Class Time", 20), ("Room Number", 15), ("Trainer ID", 15), ("Exercise Type", 20), ("Registered", 10), ("Capacity", 10), ("Price", 10)], [exer_class], [20, 15, 15, 20, 10, 10, 10])
+        if print:
+            print(f"\nClass {str(exer_class[0])} added successfully.\n")
+            Utils.print_table(
+                [("Class Time", 20), ("Room Number", 15), ("Trainer ID", 15), ("Exercise Type", 20), ("Registered", 10), ("Capacity", 10), ("Price", 10)], [exer_class], [20, 15, 15, 20, 10, 10, 10])
 
-        Utils.OK()
+        return True
 
     @staticmethod
     def get_free_room(conn, time):
@@ -80,7 +85,7 @@ class System():
         last_name = Utils.prompt_for_non_blank("Enter your last name: ")
         weight = Utils.prompt_for_number("Enter your weight: ")
         weight_goal = Utils.prompt_for_number("Enter your weight goal: ")
-        #height = Utils.prompt_for_number("Enter your height: ")
+        # height = Utils.prompt_for_number("Enter your height: ")
         cardio_time = Utils.prompt_for_number(
             "How long can you currently do cardio for? (in minutes): ")
         lifting_weight = Utils.prompt_for_number(
@@ -111,7 +116,7 @@ class System():
     def find_members(username, conn):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, monthly_fee, membership_type, first_name, last_name FROM Club_Member  WHERE username LIKE %s", ['%' + username + '%'])
+            "SELECT username, monthly_fee, membership_type, first_name, last_name FROM Club_Member  WHERE username ILIKE %s", ['%' + username + '%'])
         return cursor.fetchall()
 
     @staticmethod
@@ -124,31 +129,35 @@ class System():
             return cursor.fetchall()
         if first == "":
             cursor.execute(
-                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE last_name ILIKE %s", [last])
+                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE last_name ILIKE %s", ['%' + last + '%'])
             return cursor.fetchall()
         if last == "":
             cursor.execute(
-                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE first_name ILIKE %s", [first])
+                "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE first_name ILIKE %s", ['%' + first + '%'])
             return cursor.fetchall()
+        cursor.execute(
+            "SELECT username, monthly_fee, membership_type, first_name, last_name  FROM Club_Member  WHERE first_name ILIKE %s AND last_name ILIKE %s", ['%' + first + '%', '%' + last + '%'])
+        return cursor.fetchall()
 
     @staticmethod
     def print_member(user):
         if user == [] or user is None:
             return
         # username, monthly_free, membership_type, first_name, last_name,
-        print(f'User info for {user[0]}:')
+        Utils.print_menu_header(f"User Info for {user[0]}:")
         membership = "Basic" if user[2] == 0 else "Pro"
 
         user = list(user)
         user[2] = membership
 
         Utils.print_table(
-            [("Username", max(len(user[0]), len("Username"))), ("Monthly Fee", 15), ("Membership Type", 15), ("First Name", max(len(user[3]), len("First Name"))), ("Last Name", max(len(user[4]), len("Last Name")))]
-            , [user],
-              [max(len(user[0]), len("Username")), 15, 15, max(len(user[3]), len("First Name")), max(len(user[4]), len("Last Name"))], False)
+            [("Username", max(len(user[0]), len("Username"))), ("Monthly Fee", 12), ("Membership Type", 15), ("First Name", max(
+                len(user[3]), len("First Name"))), ("Last Name", max(len(user[4]), len("Last Name")))], [user],
+            [max(len(user[0]), len("Username")), 12, 15, max(len(user[3]), len("First Name")), max(len(user[4]), len("Last Name"))], False)
+        print("\n")
 
     @staticmethod
-    def get_trainer_schedule(conn, trainer_id):
+    def get_trainer_schedule(conn, trainer_id, print=True):
         cursor = conn.cursor()
 
         # find all of trainer's schedule
@@ -156,17 +165,15 @@ class System():
             'SELECT schedule_start, schedule_end FROM Schedule s  WHERE s.employee_id = %s AND s.schedule_start > current_timestamp ORDER BY schedule_start ASC', [trainer_id])
 
         results = cursor.fetchall()
-        if not results:
-            print("Nothing Scheduled.")
-            return
 
-        print(f'{" Start Time".ljust(20)} | {"End time".ljust(20)} ')
-        print('-' * 50)
-        for row in results:
-            print(
-                f' {str(row[0]).ljust(20)} | {str(row[1]).ljust(20)} ')
+        if print:
+            Utils.print_menu_header("Trainer Availability")
+            if not results:
+                print("Nothing Scheduled.")
+            Utils.print_table(
+                [("Start Time", 20), ("End Time", 20)], results, [20, 20], False)
 
-        print('-' * 50)
+        return results
 
     @staticmethod
     def get_class_schedule(conn):
@@ -200,3 +207,40 @@ class System():
             'INSERT INTO Invoice (username, amount, invoice_date, invoiced_service, paid) VALUES (%s, %s, NOW(), %s, false)', [username, price, class_id])
 
         print(f"Invoice for class {class_id} created successfully.")
+
+    @staticmethod
+    def create_connection():
+        user = os.environ['POSTGRES_USER']
+        password = os.environ['POSTGRES_PASS']
+
+        conn = psycopg2.connect(dbname=DB_NAME, user=user,
+                                password=password, host=HOST, port=PORT)
+        return conn
+
+    @staticmethod
+    def reset_connection(conn):
+        conn.close()
+        conn = System.create_connection()
+
+        cursor = conn.cursor()
+        return conn, cursor
+
+    @staticmethod
+    def name_member_search(conn):
+        first = input(
+            "First name: (blank to skip) >>")
+        last = input(
+            "Last name: (blank to skip) >> ")
+        match first, last:
+            case "", "":
+                out = System.find_members(
+                    "", "", conn)
+            case _, "":
+                out = System.find_members(
+                    first, "", conn)
+            case "", _:
+                out = System.find_members(
+                    "", last, conn)
+            case _, _:
+                out = System.find_members(
+                    first, last, conn)

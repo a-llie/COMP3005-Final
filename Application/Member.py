@@ -40,29 +40,36 @@ class Member(Person):
                 case "1":
                     Utils.print_menu_header(options[0])
                     self.booking_choices()
+                    Utils.OK()
                 case "2":
                     Utils.print_menu_header(options[1])
                     a = self.update_info()
                     if not a:
-                        return 
+                        return
                 case "3":
                     Utils.print_menu_header(options[2])
                     self.get_fitness_achievements()
+                    Utils.OK()
                 case "4":
                     Utils.print_menu_header(options[3])
                     self.get_health_statistics()
+                    Utils.OK()
                 case "5":
                     Utils.print_menu_header(options[4])
                     self.__see_upcoming_classes()
+                    Utils.OK()
                 case "6":
                     Utils.print_menu_header(options[5])
                     self.__log_exercise()
+                    Utils.OK()
                 case "7":
                     Utils.print_menu_header(options[6])
                     self.__see_exercise_logbook()
+                    Utils.OK()
                 case "8":
                     Utils.print_menu_header(options[7])
                     self.__pay_bill()
+                    Utils.OK()
                 case "9":
                     print("Signing out...\n\n")
                     return
@@ -81,7 +88,7 @@ class Member(Person):
             menu_choices += f"{i+1}. {option}\n"
 
         slot_choice = input(
-            f"Choose an option: \n {menu_choices} \n\n>>")
+            f"Choose an option: \n{menu_choices} \n\n>>")
         match slot_choice:
             case "1":
                 self.class_booking_process()
@@ -125,15 +132,17 @@ class Member(Person):
             print("User not found.\n")
             return
 
-        #check if the membership is valid
+        # check if the membership is valid
         mem = found[3]
         if mem == "3":
-            #invalid membership
-            ans = Utils.prompt_for_non_blank("Would you like to renew your membership? (y/n)\n>>")
+            # invalid membership
+            ans = Utils.prompt_for_non_blank(
+                "Would you like to renew your membership? (y/n)\n>>")
             if ans.lower == 'n':
                 return
-            
-            choice = Utils.prompt_for_non_blank("1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancel")
+
+            choice = Utils.prompt_for_non_blank(
+                "1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancel")
             match choice:
                 case "1":
                     cursor = conn.cursor()
@@ -148,9 +157,8 @@ class Member(Person):
                 case "3":
                     print("Membership not renewed, exiting...")
                     return
-                case _:    
+                case _:
                     print("Invalid option. \n\n")
-
 
         # most recent weight
         cursor.execute(
@@ -162,35 +170,40 @@ class Member(Person):
 
     def __log_exercise(self):
         # add a exercise to the database under the current user
-        dur = Utils.prompt_for_number("What was the duration of your exercise: ")
-        exercise_type = Utils.prompt_for_non_blank("What was your main activity: ")
-        date = Utils.get_datetime("When did you do your exercise?\n")
+        dur = Utils.prompt_for_number(
+            "Duration of exercise in minutes: >> ")
+        exercise_type = Utils.prompt_for_non_blank(
+            "Main activity: >> ")
+        date = Utils.get_datetime("Date of exercise: \n")
         self.__add_exercise(None, date, dur, exercise_type)
-
-        #ask if they would like to update thoer health stats
-        ans = Utils.prompt_for_non_blank("would you like to update your healh progress? (y/n)\n>>")
-        if ans == 'y':
-            weight = Utils.prompt_for_number("Enter your weight: ")
-            weight_goal = Utils.prompt_for_number("Enter your weight goal: ")
-            #height = Utils.prompt_for_number("Enter your height: ")
+        print("Exercise logged successfully.\n")
+        # ask if they would like to update thoer health stats
+        ans = Utils.prompt_for_non_blank(
+            "would you like to update your healh progress? (y/n)\n>>")
+        if ans.lower() == 'y':
+            weight = Utils.prompt_for_number("Enter your weight: >> ")
+            weight_goal = Utils.prompt_for_number(
+                "Enter your weight goal: >> ")
+            # height = Utils.prompt_for_number("Enter your height: ")
             cardio_time = Utils.prompt_for_number(
-                "How long can you currently do cardio for? (in minutes): ")
+                "How long can you currently do cardio for? (in minutes): >>")
             lifting_weight = Utils.prompt_for_number(
-                "How much can you currently lift? (in lbs): ")
-            cursor = self.conn.cursor()            
+                "How much can you currently lift? (in lbs): >>")
+            cursor = self.conn.cursor()
             cursor.execute(
                 'INSERT INTO Health (username, date, weight, cardio_time, lifting_weight, weight_goal) VALUES (%s, NOW(), %s, %s, %s, %s)', [self.username, weight, cardio_time, lifting_weight, weight_goal])
-            self.conn.commit()  
+            self.conn.commit()
+            print("Health stats updated.\n")
 
     def update_info(self):
         # allowe the user to update atributes about themselves
         Utils.print_menu_header("Update info")
-        #print member
-        #System.print_member(System.find_members(self.username, self.conn))
-        #print menu
+        # print member
+        # System.print_member(System.find_members(self.username, self.conn))
+        # print menu
         options = [
             "Username",
-            "Mambership Type",
+            "Membership Type",
             "Name",
             "Exit"
         ]
@@ -199,15 +212,26 @@ class Member(Person):
         for i, option in enumerate(options):
             menu_choices += f"{i+1}. {option}\n"
 
-    
         while True:
             menu_choice = input(
                 f'What would you like to update?\nChoose an option: \n\n{menu_choices} \n\n>>')
             match menu_choice:
                 case "1":
-                    new = Utils.prompt_for_non_blank("What is your new user name: ")
-                    #upadte
-                    cursor = self.conn.cursor()
+                    while True:
+                        new = Utils.prompt_for_non_blank(
+                            "Input your new username: >>")
+
+                        cursor = self.conn.cursor()
+
+                        cursor.execute(
+                            'SELECT * FROM Club_Member WHERE username = %s', [new])
+
+                        if cursor.fetchone() is not None:
+                            print("Username already exists. \n\n")
+                            continue
+                        break
+
+                    # update
                     cursor.execute(
                         '''BEGIN;
                         ALTER TABLE Invoice DROP CONSTRAINT fk_username;
@@ -222,37 +246,79 @@ class Member(Person):
                         ALTER TABLE Health ADD CONSTRAINT fk_username foreign key (username) references Club_Member(username);                    
                         COMMIT''', [new, self.username]*4)
                     self.conn.commit()
-                    self.username = new
+
+                    if cursor.rowcount == 0:
+                        print("Failed to update username. \n\n")
+                    else:
+                        print("Username updated successfully. \n\n")
+                        self.username = new
+
+                    Utils.OK()
                 case "2":
-                    choice = Utils.prompt_for_non_blank("1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancle membership")
+                    Utils.print_menu_header("Update Membership")
+                    cursor = self.conn.cursor()
+                    cursor.execute(
+                        'SELECT membership_type FROM Club_Member WHERE username = %s', [self.username])
+
+                    mem = cursor.fetchone()[0]
+                    types = ["Basic", "Pro", "Cancelled"]
+                    print(f"Current membership type: {mem}\n")
+
+                    print("Choose a new membership type: ")
+                    while True:
+                        choice = Utils.prompt_for_number(
+                            "1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancel membership\n >>")
+                        if choice not in [1, 2, 3]:
+                            print("Please choose one of three options. \n\n")
+                            continue
+                        break
+
+                    if types[choice - 1] == mem:
+                        print("Membership type is already set to that. \n\n")
+                        continue
+
                     match choice:
-                        case "1":
+                        case 1:
                             cursor = self.conn.cursor()
                             cursor.execute(
-                                'UPDATE Club_Member SET membership_type = "1" WHERE username = %s', [self.username])
+                                'UPDATE Club_Member SET membership_type = %s, monthly_fee = %s WHERE username = %s', [types[0], 50, self.username])
                             self.conn.commit()
-                        case "2":
+                        case 2:
                             cursor = self.conn.cursor()
                             cursor.execute(
-                                'UPDATE Club_Member SET membership_type = "2" WHERE username = %s', [self.username])
+                                'UPDATE Club_Member SET membership_type = %s, monthly_fee = %s WHERE username = %s', [types[1], 75, self.username])
                             self.conn.commit()
-                        case "3":
+                        case 3:
                             cursor = self.conn.cursor()
                             cursor.execute(
-                                'UPDATE Club_Member SET membership_type = "3" WHERE username = %s', [self.username])
+                                'UPDATE Club_Member SET membership_type = %s, monthly_fee = %s WHERE username = %s', [types[2], 0, self.username])
                             self.conn.commit()
+                            print("Membership cancelled successfully. \n\n")
                             return False
-                        case _:    
+                        case _:
                             print("Invalid option. \n\n")
+
+                    if cursor.rowcount == 0:
+                        print("Failed to update membership type. \n\n")
+                    else:
+                        print("Membership type updated successfully. \n\n")
+
+                    Utils.OK()
+
                 case "3":
-                    first = Utils.prompt_for_non_blank("What is your first name: ")
-                    last = Utils.prompt_for_non_blank("What is your last name: ")
+                    first = Utils.prompt_for_non_blank(
+                        "What is your first name? >> ")
+                    last = Utils.prompt_for_non_blank(
+                        "What is your last name? >> ")
                     cursor = self.conn.cursor()
                     cursor.execute(
                         'UPDATE Club_Member SET first_name = %s, last_name = %s', [first, last])
                     self.conn.commit()
                     self.first_name = first
                     self.last_name = last
+
+                    print("Name updated successfully. \n\n")
+                    Utils.OK()
                 case "4":
                     print("\n")
                     return True
@@ -263,24 +329,30 @@ class Member(Person):
         # best of
         cursor = self.conn.cursor()
         cursor.execute(
-            'SELECT date, MAX(cardio_time) FROM Health WHERE username = %s Group by (date, username)  LIMIT 1', [self.username])
-        cardio = cursor.fetchall()[0]
-        
+            'SELECT date, cardio_time FROM Health  WHERE username = %s AND cardio_time = (SELECT MAX(cardio_time) FROM Health WHERE username = %s)', [self.username, self.username])
+        cardio = cursor.fetchone()
         cursor.execute(
-            'SELECT date, MAX(lifting_weight) FROM Health  WHERE username = %s Group by (date, username) LIMIT 1', [self.username])
-        lift = cursor.fetchall()[0]
+            'SELECT date, lifting_weight FROM Health  WHERE username = %s AND lifting_weight = (SELECT MAX(lifting_weight) FROM Health WHERE username = %s)', [self.username, self.username])
+        lift = cursor.fetchone()
 
         cursor.execute(
-            'SELECT date FROM Health  WHERE username = %s AND weight >= weight_goal ORDER BY date DESC', [self.username])
-        latest_achivement_date = cursor.fetchall()[0]
+            'SELECT date, weight, weight_goal FROM Health WHERE username = %s  ORDER BY ABS(weight - weight_goal) LIMIT 1', [self.username])
+        weight_goal_info = cursor.fetchone()
 
-        cursor.execute(
-            'SELECT date, weight, weight_goal FROM Health WHERE username = %s AND date >= %s ORDER BY ABS(weight - weight_goal) LIMIT 1', [self.username, latest_achivement_date])
-        date, weight, weigth_goal = cursor.fetchall()[0]
-        print(cardio)
-        Utils.print_menu_header("Your bests")
-        print(f"Longest cardio session: {str(cardio[1])} minutes on {cardio[0]}\nBest lift: {str(lift[1])} ibs on {lift[0]}\nClosest to your weight goal: {weight} pounds on {str(date)}\nWeigth Goal: {weigth_goal} pounds")
-        Utils.OK()
+        best = ""
+        if cardio is not None:
+            best += f"Longest cardio session: {cardio[1]} minutes on {cardio[0]}\n\n"
+        if lift is not None:
+            best += f"Best lift: {lift[1]} lbs on {lift[0]}\n\n"
+        if weight_goal_info is not None:
+            best += f"Closest to your weight goal:\n\n   Date: {weight_goal_info[0]}\n\n   Weight: {weight_goal_info[1]}lbs pounds\n\n   Weight Goal: {weight_goal_info[2]} pounds\n\n   Difference: {abs(weight_goal_info[1] - weight_goal_info[2])} pounds\n\n"
+
+        if best == "":
+            print("No fitness achievements yet.\n")
+            return
+
+        Utils.print_menu_header("Your Bests")
+        print(best)
 
     def get_health_statistics(self):
         # history
@@ -306,7 +378,6 @@ class Member(Person):
         Utils.table_row_print(
             [(weight_change + " lbs", 20), (cardio_change + " minutes", 20), ((lift_change + " lbs"), 11)])
         print('-' * 60 + "\n\n")
-        Utils.OK()
 
     def browse_training_sessions(self, sessions):
         print("Here are all the available training sessions:\n")
@@ -324,16 +395,16 @@ class Member(Person):
     # data step of booking a personal training session
     def book_session(self, session, exersise="personal training"):
 
-        print(f'Booking session with {session[0]} at {session[1]}...')
-
         cursor = self.conn.cursor()
 
         # find free room
         room_id = System.get_free_room(self.conn, session[1])
 
         # book a one hour block of the schedule
-        System.add_class(
-            self.conn, room_id, session[1], session[0], 1, 1, exersise, 50)
+        if not System.add_class(
+                self.conn, room_id, session[1], session[0], 1, 1, exersise, 50, False):
+            self.conn, cursor = System.reset_connection(self.conn)
+            return
 
         cursor.execute(
             'SELECT class_id FROM Class WHERE room_num = %s AND class_time = %s', [room_id, session[1]])
@@ -342,7 +413,6 @@ class Member(Person):
         self.__add_exercise(class_id, session[1], 60, exersise)
 
         print("Session booked successfully.\n")
-        input("OK [Press Enter]")
 
         cursor.execute(
             'SELECT * FROM Exercise WHERE username = %s AND exercise_date > NOW()', [self.username])
@@ -394,7 +464,6 @@ class Member(Person):
             [("Class Time", 20), ("Room Number", 15), ("Exercise Type", 25), ("Trainer Name", 25)], full_results, [20, 15, 25, 25])
 
         print("\n")
-        Utils.OK()
 
     def __see_exercise_logbook(self):
         cursor = self.conn.cursor()
@@ -409,16 +478,20 @@ class Member(Person):
         else:
             Utils.print_table(
                 [("Date", 20), ("Exercise Type", 15),
-                 ("Duration", 10)], past, [20, 15, 10])
+                 ("Duration in Minutes", 20)], past, [20, 15, 10])
             print("\n")
-            Utils.OK()
 
-    def __add_exercise(self, class_id, startTime, duration, exercise_type: str):
+    def __add_exercise(self, class_id, startTime, duration, exercise_type: str) -> bool:
         cursor = self.conn.cursor()
         cursor.execute(
             'INSERT INTO Exercise (duration, exercise_date, exercise_type, class_id, username) VALUES (%s, %s, %s, %s, %s)', [duration, startTime, exercise_type, class_id, self.username])
-        self.conn.commit()
-        pass
+
+        if cursor.rowcount == 0:
+            print("Failed to log exercise. \n\n")
+            return False
+        else:
+            self.conn.commit()
+            return True
 
     def __pay_bill(self):
         # get owing
@@ -461,9 +534,8 @@ class Member(Person):
             return
 
         print(results[int(choice) - 1][3])
-        print("\nconnecting to payment service..")
+        print("\nConnecting to payment service..\n")
         cursor.execute(
             'UPDATE Invoice SET paid = true WHERE invoice_id = %s', [results[int(choice) - 1][3]])
         self.conn.commit()
         print("Invoice paid.\n\n")
-        Utils.OK()
