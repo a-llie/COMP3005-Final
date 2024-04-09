@@ -7,8 +7,8 @@ DB_NAME = 'Gym'
 HOST = 'localhost'
 PORT = '5432'
 
-TABLE_CREATION_FILE = 'SQL\schema.ddl'
-TABLE_POPULATION_FILE = 'SQL\sampleData.dml'
+TABLE_CREATION_FILE = 'schemaDDL.sql'
+TABLE_POPULATION_FILE = 'sampleDataDML.sql'
 
 
 def execute_sql_file(file_path, conn):
