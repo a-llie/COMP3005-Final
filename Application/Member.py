@@ -47,7 +47,7 @@ class Member(Person):
                         return 
                 case "3":
                     Utils.print_menu_header(options[2])
-
+                    self.get_fitness_achievements()
                 case "4":
                     Utils.print_menu_header(options[3])
                     self.get_health_statistics()
@@ -263,22 +263,24 @@ class Member(Person):
         # best of
         cursor = self.conn.cursor()
         cursor.execute(
-            'SELECT date, MAX(cardio_time) FROM Health  WHERE username = %s', [self.username])
-        cardio = cursor.fetchall()
+            'SELECT date, MAX(cardio_time) FROM Health WHERE username = %s Group by (date, username)  LIMIT 1', [self.username])
+        cardio = cursor.fetchall()[0]
+        
         cursor.execute(
-            'SELECT date, MAX(lifting_weight) FROM Health  WHERE username = %s', [self.username])
-        lift = cursor.fetchall()
+            'SELECT date, MAX(lifting_weight) FROM Health  WHERE username = %s Group by (date, username) LIMIT 1', [self.username])
+        lift = cursor.fetchall()[0]
 
         cursor.execute(
             'SELECT date FROM Health  WHERE username = %s AND weight >= weight_goal ORDER BY date DESC', [self.username])
         latest_achivement_date = cursor.fetchall()[0]
 
         cursor.execute(
-            'SELECT date, weight, weight_goal FROM Health WHERE username = %s AND date > %s ORDER BY ABS(weight - weight_goal) LIMIT 1', [self.username, latest_achivement_date])
-        weight, weigth_goal = cursor.fetchall()
-
+            'SELECT date, weight, weight_goal FROM Health WHERE username = %s AND date >= %s ORDER BY ABS(weight - weight_goal) LIMIT 1', [self.username, latest_achivement_date])
+        date, weight, weigth_goal = cursor.fetchall()[0]
+        print(cardio)
         Utils.print_menu_header("Your bests")
-        print("Longest cardio session: %s minutes on %s\nBest lift: %s ibs on %s\nClosest to your weight goal: %s pounds\nWeigth Goal: %s pounds")
+        print(f"Longest cardio session: {str(cardio[1])} minutes on {cardio[0]}\nBest lift: {str(lift[1])} ibs on {lift[0]}\nClosest to your weight goal: {weight} pounds on {str(date)}\nWeigth Goal: {weigth_goal} pounds")
+        Utils.OK()
 
     def get_health_statistics(self):
         # history
