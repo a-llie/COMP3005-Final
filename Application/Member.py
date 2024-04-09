@@ -180,9 +180,7 @@ class Member(Person):
             cursor = self.conn.cursor()            
             cursor.execute(
                 'INSERT INTO Health (username, date, weight, cardio_time, lifting_weight, weight_goal) VALUES (%s, NOW(), %s, %s, %s, %s)', [self.username, weight, cardio_time, lifting_weight, weight_goal])
-            self.conn.commit()
-
-            
+            self.conn.commit()  
 
     def update_info(self):
         # allowe the user to update atributes about themselves
@@ -261,10 +259,26 @@ class Member(Person):
                 case _:
                     print("Invalid option. \n\n")
 
-
-    def get_fitness_achievements():
+    def get_fitness_achievements(self):
         # best of
-        pass
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'SELECT date, MAX(cardio_time) FROM Health  WHERE username = %s', [self.username])
+        cardio = cursor.fetchall()
+        cursor.execute(
+            'SELECT date, MAX(lifting_weight) FROM Health  WHERE username = %s', [self.username])
+        lift = cursor.fetchall()
+
+        cursor.execute(
+            'SELECT date FROM Health  WHERE username = %s AND weight >= weight_goal ORDER BY date DESC', [self.username])
+        latest_achivement_date = cursor.fetchall()[0]
+
+        cursor.execute(
+            'SELECT date, weight, weight_goal FROM Health WHERE username = %s AND date > %s ORDER BY ABS(weight - weight_goal) LIMIT 1', [self.username, latest_achivement_date])
+        weight, weigth_goal = cursor.fetchall()
+
+        Utils.print_menu_header("Your bests")
+        print("Longest cardio session: %s minutes on %s\nBest lift: %s ibs on %s\nClosest to your weight goal: %s pounds\nWeigth Goal: %s pounds")
 
     def get_health_statistics(self):
         # history
