@@ -18,11 +18,25 @@ class Utils():
         return dt.strftime(f)
 
     @staticmethod
-    def get_datetime(header: str, minute: bool = True):
+    def get_past_datetime(header: str, minute: bool = True):
         print(header)
         year = Utils.prompt_for_non_future_year()
         month = Utils.prompt_for_non_future_month(year)
         day = Utils.prompt_for_non_future_day(month)
+
+        hour = Utils.prompt_for_hour()
+        if minute:
+            minute = Utils.prompt_for_minute()
+        else:
+            minute = 0
+        return datetime(year, month, day, hour, minute, 0)
+    
+    @staticmethod
+    def get_datetime(header: str, minute: bool = True):
+        print(header)
+        year = Utils.prompt_for_year()
+        month = Utils.prompt_for_month(year)
+        day = Utils.prompt_for_day(month)
 
         hour = Utils.prompt_for_hour()
         if minute:
@@ -38,6 +52,15 @@ class Utils():
             if year > datetime.now().year:
                 print("Invalid year. Please enter a year that's not in the future.")
                 continue
+            if year < 1950:
+                print("Invalid year. Please enter a year after 1950.")
+                continue
+            return year
+        
+    @staticmethod
+    def prompt_for_year():
+        while True:
+            year = Utils.prompt_for_number("Year: >> ")
             if year < 1950:
                 print("Invalid year. Please enter a year after 1950.")
                 continue
@@ -58,6 +81,19 @@ class Utils():
                 print("Invalid month. Please enter a month that's not in the future.")
                 continue
             return month
+        
+    @staticmethod
+    def prompt_for_month(year: int):
+        max_month = 12
+
+        if year == datetime.now().year:
+            max_month = datetime.now().month
+        while True:
+            month = Utils.prompt_for_number("Month (number): >>")
+            if month > max_month:
+                print("Invalid month. Please enter a month that's not in the future.")
+                continue
+            return month
 
     @staticmethod
     def prompt_for_non_future_day(month: int):
@@ -69,6 +105,18 @@ class Utils():
             if day > datetime.now().day:
                 print("Invalid day. Please enter a day that's not in the future.")
                 continue
+            if day < 1 or day > months[month-1]:
+                print("Invalid day. Please enter a valid day for the month.")
+                continue
+            return day
+        
+    @staticmethod
+    def prompt_for_day(month: int):
+        months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        if datetime.now().year % 4 == 0:
+            months[1] = 29
+        while True:
+            day = Utils.prompt_for_number("Day: >>")
             if day < 1 or day > months[month-1]:
                 print("Invalid day. Please enter a valid day for the month.")
                 continue

@@ -306,7 +306,7 @@ class Member(Person):
             "Duration of exercise in minutes: >> ")
         exercise_type = Utils.prompt_for_non_blank(
             "Main activity: >> ")
-        date = Utils.get_datetime("Date of exercise: \n")
+        date = Utils.get_past_datetime("Date of exercise: \n")
         self.__add_exercise(None, date, dur, exercise_type)
         print("Exercise logged successfully.\n")
         # ask if they would like to update thoer health stats
