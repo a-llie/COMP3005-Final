@@ -91,18 +91,13 @@ class Trainer(Person):
                 case _:
                     print("Invalid option.\n")
 
-    def __add_availability(self, start, end):  # psudo code
+    def __add_availability(self, start, dur: int):  # psudo code
         # breack it into one our blocks
-        duration = Utils.timestamp_to_datetime(
-            end) - Utils.timestamp_to_datetime(start)
-        hours = divmod(duration.total_seconds(), 3600)[0]
         cursor = self.conn.cursor()
 
-        # insert adeal with round up to next hour here
-        hours = math.ceil(hours)
 
-        for i in range(hours):
-            next_time = Utils.timestamp_add_hour(start)
+        for i in range(dur):
+            next_time = Utils.datetime_add_hour(start)
             try:
                 cursor.execute(
                     'INSERT INTO Schedule (employee_id, schedule_start, schedule_end) VALUES (%s, %s, %s)', [self.trainer_ID, start, next_time])
@@ -113,17 +108,13 @@ class Trainer(Person):
 
             start = next_time
 
-    def __remove_availability(self, start, end):  # psudo code
+    def __remove_availability(self, start, dur: int):  # psudo code
         # breack it into one our blocks
-        duration = Utils.timestamp_to_datetime(
-            end) - Utils.timestamp_to_datetime(start)
-        hours = divmod(duration.total_seconds(), 3600)[0]
+        
         cursor = self.conn.cursor()
 
-        hours = math.ceil(hours)
-
-        for i in range(hours):
-            next_time = Utils.timestamp_add_hour(start)
+        for i in range(dur):
+            next_time = Utils.datetime_add_hour(start)
             try:
                 cursor.execute(
                     'DELETE FROM Schedule WHERE employee_id = %s AND schedule_start = %s AND schedule_end = %s', [self.trainer_ID, start, next_time])
@@ -146,22 +137,22 @@ class Trainer(Person):
 
                 case "2":
                     # take start time in format
-                    start = input(
-                        "Give Start time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
+                    start = Utils.get_datetime(
+                        "Give Start time \n")
                     # take end time in format
-                    end = input(
-                        "Give end time of block (in form 'yyyy-mm-dd hh:mm:ss'): ")
+                    dur = Utils.prompt_for_number(
+                        "How many hours will you be working for: \n")
 
-                    self.__add_availability(start, end)
+                    self.__add_availability(start, dur)
 
                 case "3":
                     # take start time in format
-                    start = input(
-                        "Give Start time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
-                    end = input(
-                        "Give end time of block you would like to remvoe (in form 'yyyy-mm-dd hh:mm:ss'):\n ")
+                    start = Utils.get_datetime(
+                        "Give Start time of block you would like to remvoe :\n ")
+                    dur = Utils.prompt_for_number(
+                        "How many hours will you be removing: \n ")
 
-                    self.__remove_availability(start, end)
+                    self.__remove_availability(start, dur)
 
                 case "4":
                     break

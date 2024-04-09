@@ -365,7 +365,8 @@ class Admin(Person):
                     FROM 
                         Club_Member c
                     WHERE not exists
-                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)""")
+                       (SELECT * FROM Invoice i WHERE i.username = c.username AND i.invoice_date = DATE_TRUNC('month', CURRENT_DATE) AND i.invoiced_service is null)
+                        AND c.membership_type != '3'""")
 
         self.conn.commit()
         print(

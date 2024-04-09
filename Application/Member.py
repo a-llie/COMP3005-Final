@@ -1,6 +1,7 @@
 from System import System
 from Person import Person
 from gym_utils import Utils
+from datetime import datetime
 
 
 class Member(Person):
@@ -41,8 +42,12 @@ class Member(Person):
                     self.booking_choices()
                 case "2":
                     Utils.print_menu_header(options[1])
+                    a = self.update_info()
+                    if not a:
+                        return 
                 case "3":
                     Utils.print_menu_header(options[2])
+
                 case "4":
                     Utils.print_menu_header(options[3])
                     self.get_health_statistics()
@@ -51,6 +56,7 @@ class Member(Person):
                     self.__see_upcoming_classes()
                 case "6":
                     Utils.print_menu_header(options[5])
+                    self.__log_exercise()
                 case "7":
                     Utils.print_menu_header(options[6])
                     self.__see_exercise_logbook()
@@ -113,28 +119,134 @@ class Member(Person):
             user = input("Enter your username: ")
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT c.username, c.first_name, c.last_name FROM Club_Member c WHERE c.username = %s", [user])
+            "SELECT c.username, c.first_name, c.last_name, c.membership_type FROM Club_Member c WHERE c.username = %s", [user])
         found = cursor.fetchone()
         if found is None:
             print("User not found.\n")
             return
+
+        #check if the membership is valid
+        mem = found[3]
+        if mem == "3":
+            #invalid membership
+            ans = Utils.prompt_for_non_blank("Would you like to renew your membership? (y/n)\n>>")
+            if ans.lower == 'n':
+                return
+            
+            choice = Utils.prompt_for_non_blank("1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancel")
+            match choice:
+                case "1":
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'UPDATE Club_Member SET membership_type = "1" WHERE username = %s', [user])
+                    conn.commit()
+                case "2":
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'UPDATE Club_Member SET membership_type = "2" WHERE username = %s', [user])
+                    conn.commit()
+                case "3":
+                    return
+                case _:    
+                    print("Invalid option. \n\n")
+
 
         # most recent weight
         cursor.execute(
             "SELECT weight FROM health  WHERE username = %s Order By date DESC", [user])
         weight = cursor.fetchone()[0]
 
-        user, first_name, last_name = found
+        user, first_name, last_name, _ = found
         return Member(user, first_name, last_name, weight, conn)
 
-    def add_exercise(startTime, duration, exercise_type: str, weight):
+    def __log_exercise(self):
         # add a exercise to the database under the current user
-        # use the helper
+        dur = Utils.prompt_for_number("What was the duration of your exercise: ")
+        exercise_type = Utils.prompt_for_non_blank("What was your main activity: ")
+        date = Utils.get_datetime("When did you do your exercise?\n")
+        self.__add_exercise(None, date, dur, exercise_type)
+
+        #ask if they would like to update thoer health stats
+        
         pass
 
-    def update_info():
+    def update_info(self):
         # allowe the user to update atributes about themselves
-        pass
+        Utils.print_menu_header("Update info")
+        #print member
+        #System.print_member(System.find_members(self.username, self.conn))
+        #print menu
+        options = [
+            "Username",
+            "Mambership Type",
+            "Name",
+            "Exit"
+        ]
+
+        menu_choices = ""
+        for i, option in enumerate(options):
+            menu_choices += f"{i+1}. {option}\n"
+
+    
+        while True:
+            menu_choice = input(
+                f'What would you like to update?\nChoose an option: \n\n{menu_choices} \n\n>>')
+            match menu_choice:
+                case "1":
+                    new = Utils.prompt_for_non_blank("What is your new user name: ")
+                    #upadte
+                    cursor = self.conn.cursor()
+                    cursor.execute(
+                        '''BEGIN;
+                        ALTER TABLE Invoice DROP CONSTRAINT fk_username;
+                        ALTER TABLE Exercise DROP CONSTRAINT fk_username;
+                        ALTER TABLE Health DROP CONSTRAINT fk_username;
+                        UPDATE Club_Member SET username = %s WHERE username = %s;
+                        UPDATE Invoice SET username = %s WHERE username = %s;
+                        UPDATE Exercise SET username = %s WHERE username = %s;
+                        UPDATE Health SET username = %s WHERE username = %s;
+                        ALTER TABLE Invoice ADD CONSTRAINT fk_username foreign key (username) references Club_Member(username);                    
+                        ALTER TABLE Exercise ADD CONSTRAINT fk_username foreign key (username) references Club_Member(username);                    
+                        ALTER TABLE Health ADD CONSTRAINT fk_username foreign key (username) references Club_Member(username);                    
+                        COMMIT''', [new, self.username]*4)
+                    self.conn.commit()
+                    self.username = new
+                case "2":
+                    choice = Utils.prompt_for_non_blank("1. Basic, 50$/month \n2. Pro, 75$/month \n3. Cancle membership")
+                    match choice:
+                        case "1":
+                            cursor = self.conn.cursor()
+                            cursor.execute(
+                                'UPDATE Club_Member SET membership_type = "1" WHERE username = %s', [self.username])
+                            self.conn.commit()
+                        case "2":
+                            cursor = self.conn.cursor()
+                            cursor.execute(
+                                'UPDATE Club_Member SET membership_type = "2" WHERE username = %s', [self.username])
+                            self.conn.commit()
+                        case "3":
+                            cursor = self.conn.cursor()
+                            cursor.execute(
+                                'UPDATE Club_Member SET membership_type = "3" WHERE username = %s', [self.username])
+                            self.conn.commit()
+                            return False
+                        case _:    
+                            print("Invalid option. \n\n")
+                case "3":
+                    first = Utils.prompt_for_non_blank("What is your first name: ")
+                    last = Utils.prompt_for_non_blank("What is your last name: ")
+                    cursor = self.conn.cursor()
+                    cursor.execute(
+                        'UPDATE Club_Member SET first_name = %s, last_name = %s', [first, last])
+                    self.conn.commit()
+                    self.first_name = first
+                    self.last_name = last
+                case "4":
+                    print("\n")
+                    return True
+                case _:
+                    print("Invalid option. \n\n")
+
 
     def get_exercises():
         pass
